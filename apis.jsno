@@ -766,11 +766,9 @@
       "mobile": "[phone]"
     },
     "header": {}
-  }
-]        
+  },。
 
 
-[
   {"url": "http://101.132.126.166:8080/message/sendVerifyCode?callback=successCallback&mobilePhone=[phone]&t=1589625247333action_type=regist&mobile=[phone]", "method": "GET", "data": {}, "header": {}},
   {"url": "http://12345.panzhihua.gov.cn/sms/getSMSCode?mobile=[phone]", "method": "GET", "data": {}, "header": {}},
   {"url": "http://19.offcn.com/send_message/seccode/?0.8413693207408235&msgpic=user=[phone]", "method": "GET", "data": {}, "header": {}},
