@@ -6868,11 +6868,9 @@
     "method": "GET",
     "data": {},
     "header": {}
-  }
-]
+  },
 
 
-[
   {
     "desc": "迪卡侬",
     "url": "https://www.decathlon.com.cn/zh/ajax/rest/model/atg/userprofiling/ProfileActor/send-mobile-verification-code",
