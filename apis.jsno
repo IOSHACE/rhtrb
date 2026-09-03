@@ -1,11 +1,16 @@
 [
-  {
-
   
+  {
     "url": "https://service.mkey.163.com/mpay/api/users/login/mobile/get_sms",
     "method": "POST",
     "header": {
-      "Content-Type": "application/x-www-form-urlencoded"
+      "Host": "service.mkey.163.com",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Connection": "keep-alive",
+      "Accept": "*/*",
+      "User-Agent": "com.netease.id5/26.166.1720 NeteaseMobileGame/i5.19.0 (iPhone; iOS 16.6.1; Scale/2.00)",
+      "Accept-Language": "zh-Hans-CN;q=1, en-CN;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br"
     },
     "data": {
       "mobile": "[phone]"
