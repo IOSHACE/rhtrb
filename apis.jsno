@@ -1,5 +1,4 @@
 [
-  
   {
     "url": "https://end.huajuetech.com/api/sendCode",
     "method": "POST",
@@ -29,7 +28,7 @@
   {
     "url": "https://mskzkt.jse.edu.cn/baseApi/user/code/",
     "method": "POST",
-    data": {
+    "data": {
       "mobile": "[phone]",
       "type": "1"
     },
@@ -172,6 +171,5 @@
     "method": "POST",
     "data": {},
     "header": {}
-  },
-  
+  }
 ]
