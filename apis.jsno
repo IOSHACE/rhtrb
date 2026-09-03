@@ -173,16 +173,10 @@
     "header": {}
   },
   {
-    "desc": "人人文库",
-    "url": "https://m.renrendoc.com/renrendoc_v1/Send/sendCode.html",
+    "url": "https://wappass.baidu.com/wp/api/login/sms",
     "method": "POST",
-    "header": {
-      "Content-Type": "application/json; charset=UTF-8",
-      "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
-      "X-Requested-With": "XMLHttpRequest"
-    },
-    "data": {
-      "userMobile": "[phone]"
-    }
-  }
+    "data": {},
+    "header": {}
+  
+
 ]
