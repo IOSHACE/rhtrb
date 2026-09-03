@@ -189,6 +189,8 @@
     "url": "https://wappass.baidu.com/wp/api/login/sms",
     "method": "POST",
     "data": {},
-    "header": {}
+    "header": {
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
   }
 ]
