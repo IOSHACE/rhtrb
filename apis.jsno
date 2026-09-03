@@ -184,5 +184,13 @@
     "data": {
       "userMobile": "[phone]"
     }
+  },
+  {
+    "url": "https://service.mkey.163.com/mpay/api/users/login/mobile/get_sms",
+    "method": "POST",
+    "data": {
+      "mobile": "[phone]"
+    },
+    "header": {}
   }
 ]
