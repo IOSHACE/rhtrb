@@ -28,7 +28,13 @@
       "Accept": "application/json, text/plain, */*",
       "Content-Type": "application/octet-stream",
       "Accept-Encoding": "gzip, deflate, br",
-      "Sec-Fetch-Mode": "cors"
+      "Sec-Fetch-Mode": "cors",
+      "Server": "nginx",
+      "Date": "Thu, 03 Sep 2026 18:28:28 GMT",
+      "Vary": "Origin, Access-Control-Request-Method, Access-Control-Request-Headers",
+      "Access-Control-Allow-Origin": "https://ty.dznwa.me",
+      "Access-Control-Allow-Credentials": "true",
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
     },
     "data": {
       "mobile": "[phone]"
