@@ -3,9 +3,21 @@
   {
     "url": "https://account.xiaomi.com/pass/sendServiceLoginTicket",
     "method": "POST",
+    "header": {
+      "Host": "account.xiaomi.com",
+      "Accept": "*/*",
+      "baggage": "sentry-environment=Appstore,sentry-public_key=96a06cd2adcd45a9853affa4792d5cbd,sentry-release=com.xiaomi.miwatch.pro%403.52.0%2B14,sentry-trace_id=0631dea837d743b695514733f90b5355",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Accept-Language": "zh-CN,zh-Hans;q=0.9",
+      "sentry-trace": "0631dea837d743b695514733f90b5355-f2f037fa874b4b9c-0",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "EUI": "cQ8oIAMKF/3I/xif6salNXqN7Ud8TN1JRqrXxB2TnNSR5xL2+C0lJtURNR0CPGIAXeyJqEOge2oG9sfIFfaFUVbqYR5BISU5spVccDH90funLDHD/J6GFMcF9ESRW3YN488fDZIjl3jSJfilSMnPNFKCLnLlM2fPux207wPOipHpmv0aTBGjQm4kY0xgK50g1/1ZwUP1qZ2lLWZa17ZDZ3HNHur4YaihwKi5KoiDhHRM3Lvwvry01rGTxjFzWWzsrWSLoc2PF5ivFDViEygvfzBtY32K4JYWznbMAQWT6yRgsVRtZO0+IbwxBIHfCZ/1rgvho40FlUdlrpt3Wy4YSg==.dXNlcg==.XRAaUJ0+6plrhjJ+bQyhPAiDRtwSp+p3cLBXBTloBLA=",
+      "Connection": "keep-alive",
+      "User-Agent": "APP/com.xiaomi.miwatch.pro APPV/3.52.0 iosPassportSDK/4.2.64 iOS/16.6.1 MK/aVBob25lMTEsOA== DEVT/aVBob25l DEVS/aU9T BRA/QXBwbGU= L/zh_CN miHSTS",
+      "Cookie": "deviceId=9D62E737887D85D8; sdkVersion=4.2.64"
+    },
     "data": {
       "mobile": "[phone]"
-    },
-    "header": {}
+    }
   }
 ]
