@@ -1,32 +1,11 @@
 [
-  {  
-    "url": "https://xluser-ssl.xunlei.com/v1/auth/verification",
+  
+  {
+    "url": "https://account.xiaomi.com/pass/sendServiceLoginTicket",
     "method": "POST",
-    "header": {
-      "Host": "xluser-ssl.xunlei.com",
-      "x-provider-name": "None",
-      "Referer": "app://com.xunlei.mvideo",
-      "x-device-name": "em84x.top%20%E6%B3%A8%E5%86%8C%E5%8D%B3%E9%80%8158",
-      "User-Agent": "com.xunlei.mvideo/2.4.20 OSVersion/ios16.6.1 ClientVersion/2.4.20 SDKVersion/0.2.3 ProtocolVersion/301 PlatformVersion/11 DeviceId/375ffde29bd9624966866b4febe26b7b DeviceModel/iPhone11%2C8 DeviceName/em84x.top%20%E6%B3%A8%E5%86%8C%E5%8D%B3%E9%80%8158",
-      "x-protocol-version": "301",
-      "x-device-model": "iPhone11%2C8",
-      "x-device-sign": "div101.375ffde29bd9624966866b4febe26b7b62b82c786091ccd27a5aaeeead84c18c",
-      "x-device-id": "375ffde29bd9624966866b4febe26b7b",
-      "x-client-id": "XoL5lqbDWNW0e7QA",
-      "x-os-version": "ios16.6.1",
-      "x-captcha-token": "ck0.4UD-Qy8SYhNrWN1TuFbjd8inItuEm4dNLjCdxr7hAUDNostoAEbltqviBsz2r1-qemRVOxQDrhvh77KvSZB_76xm5vD3KFIME_5ZuJ9-A3UTmrg1-tXiWztxmt3ALYcU90RGUPenDxOe2T84JxxWhQoZR4Q5Fw8yWGrXWe5ooLxDQWtz1uJpgphA5amfyZNr-Oqna9snn3G7j9caE4zA2vVlenbEfNisWNJ1-JSnfvyz2xmQwooxgSmc82XY9nF6TzCJvfB2wCplapB0pK1rl0a5fNw5mvPR6lB_3OGVUgw.ClYIgcSyrpozEhBYb0w1bHFiRFdOVzBlN1FBGgYyLjQuMjAiEWNvbS54dW5sZWkubXZpZGVvKiAzNzVmZmRlMjliZDk2MjQ5NjY4NjZiNGZlYmUyNmI3YhKAAYmUPXWksKChH0U6-_NFfS_iZ76BR0kKmewPOy6fXAEcpY02j4G-UYMhz4j7KLmoyG-QuROeNbEL3Ex3vMHAdzanTMMBpSVw8zh2nWBV5IYiWkLJtHBjMjWBrLnK4ehmqkQQRfiSqK3HtFoD8XfJfgFJ3KuQPUimFK_6T_iT3gzV",
-      "x-sdk-version": "0.2.3",
-      "x-client-version": "2.4.20",
-      "x-net-work-type": "None",
-      "x-platform-version": "11",
-      "Connection": "keep-alive",
-      "Accept-Language": "zh-hans",
-      "Accept": "*/*",
-      "Content-Type": "application/json",
-      "Accept-Encoding": "gzip, deflate, br"
-    },
     "data": {
       "mobile": "[phone]"
-    }
+    },
+    "header": {}
   }
 ]
