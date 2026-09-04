@@ -1,5 +1,38 @@
 [
-  {  
+  
+  {
+    "url": "https://service.mkey.163.com/mpay/api/users/login/mobile/get_sms",
+    "method": "POST",
+    "header": {
+      "Host": "service.mkey.163.com",
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Connection": "keep-alive",
+      "Accept": "*/*",
+      "User-Agent": "com.netease.id5/26.166.1720 NeteaseMobileGame/i5.19.0 (iPhone; iOS 16.6.1; Scale/2.00)",
+      "Accept-Language": "zh-Hans-CN;q=1, en-CN;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br"
+    },
+    "data": {
+      "app_channel": "app_store",
+      "app_mode": "2",
+      "cv": "i5.19.0",
+      "device_id": "amawrqiaawyo35kt-d",
+      "game_id": "aecfrt3rmaaaaajl-g-h55",
+      "gv": "26.166.1720",
+      "jf_game_id": "h55",
+      "lang": "ZH-CN",
+      "mcount_app_key": "EEkEEXLymcNjM42yLY3Bn6AO15aGy4yq",
+      "mcount_transaction_id": "C689B721-2535-41FA-B0D7-5F6026426C17_1788455345170_808479530",
+      "mobile": "86-[phone]",
+      "opt_fields": "nickname%2Cavatar%2Crealname_status%2Crealname_verify_status%2Cmobile_bind_status%2Cmask_related_mobile%2Crelated_login_status%2Cdetect_is_new_user",
+      "region": "CN",
+      "sc": "1",
+      "sv": "16.6.1",
+      "transid": "C689B721-2535-41FA-B0D7-5F6026426C17_1788455333249_949328399",
+      "urs_udid": "85936338-FD46-4639-84F9-7EAD162B0F22"
+    }
+  },
+  {
     "url": "https://zg-education.eoffcn.com/ssogateway/v1/user/sms/send",
     "method": "POST",
     "header": {
