@@ -17,7 +17,9 @@
       "Cookie": "deviceId=9D62E737887D85D8; sdkVersion=4.2.64"
     },
     "data": {
-      "mobile": "[phone]"
+      "mobile": "[phone]",
+      "sid": "miothealth",
+      "user": "lwbtCOTkhAvotLhhdJ%2B7AA%3D%3D"
     }
   }
 ]
