@@ -106,13 +106,9 @@ body { background: #000; min-height: 100vh; display: flex; align-items: center; 
 // 1. 配置
 // ============================================================
 const CONFIG = {
-  softid: "2J5C9L1L2Z4K0W0X",
-  version: "1.0",
-  apiUrls: [
-    "http://api.1wxyun.com/?type=17",
-    "http://api2.1wxyun.com/?type=17",
-    "http://apiw1.1wxyun.com/?type=17"
-  ],
+  cardId: "24",
+  cardAppid: "704fccc27c0bed009bfe477ce9939eeb",
+
   buyUrl: "https://xt.lqfaka.com/shop/U1W20W9F",
   qqShareUrl: "https://sharechain.qq.com/0235fc0c9c6056d18649c82d98146995?qq_aio_chat_type=2",
   secretMark: "123456789",
@@ -211,7 +207,275 @@ const CONFIG = {
 };
 
 // ============================================================
-// 2. 通用工具
+// 2. Aisling 卡密验证类（固定 UUID + 移除 UUID 匹配）
+// ============================================================
+const FIXED_DEVICE_UUID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+
+class Verify {
+    constructor(id, appid, code) {
+        this.id = id;
+        this.appid = appid;
+        this.code = code;
+        this.uuid = this.getOrCreateUUID();
+        this.CHACHA20_KEY_LENGTH = 32;
+        this.CHACHA20_NONCE_LENGTH = 12;
+        this.CHACHA20_CONSTANTS = new Uint32Array([0x61707865, 0x3320646e, 0x79622d32, 0x6b206574]);
+        this.MAX_TIMESTAMP_DIFF = 5;
+    }
+
+    getOrCreateUUID() {
+        const storageKey = 'Aisling_cardSystem_uuid';
+        let uuid = localStorage.getItem(storageKey);
+        if (uuid !== FIXED_DEVICE_UUID) {
+            uuid = FIXED_DEVICE_UUID;
+            localStorage.setItem(storageKey, uuid);
+        }
+        return uuid;
+    }
+
+    generateUUID() {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}`;
+    }
+
+    async generateSignature(timestamp, code, uuid, id, appid) {
+        const signString = timestamp + code + uuid + id + appid;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(signString);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async verifyResponseSignature(timestamp, code, uuid, checkSign) {
+        const checkString = timestamp + code + uuid;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(checkString);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const expectedSign = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return checkSign === expectedSign;
+    }
+
+    verifyTimestamp(timestamp) {
+        if (!timestamp) return false;
+        const clientTime = parseInt(timestamp);
+        const serverTime = Math.floor(Date.now() / 1000);
+        const diff = Math.abs(serverTime - clientTime);
+        return diff <= this.MAX_TIMESTAMP_DIFF;
+    }
+
+    async verifyResponseIntegrity(response, code) {
+        if (!response || typeof response !== 'object') return false;
+        const {success, usertime, code: responseCode, uuid, check} = response;
+        if (success === undefined || !usertime || !responseCode || !uuid || !check) return false;
+        const timestamp = usertime.toString();
+        if (responseCode !== code) return false;
+        // 已移除 UUID 匹配检查
+        if (!this.verifyTimestamp(timestamp)) return false;
+        if (!await this.verifyResponseSignature(timestamp, code, uuid, check)) return false;
+        return true;
+    }
+
+    generateChaCha20Key(appid) {
+        const encoder = new TextEncoder();
+        let keyBytes = encoder.encode(appid);
+        if (keyBytes.length < this.CHACHA20_KEY_LENGTH) {
+            const paddedKey = new Uint8Array(this.CHACHA20_KEY_LENGTH);
+            paddedKey.set(keyBytes);
+            for (let i = keyBytes.length; i < this.CHACHA20_KEY_LENGTH; i++) {
+                paddedKey[i] = 0x30;
+            }
+            return paddedKey;
+        } else {
+            return keyBytes.slice(0, this.CHACHA20_KEY_LENGTH);
+        }
+    }
+
+    base64Encode(data) {
+        if (typeof data === 'string') {
+            const encoder = new TextEncoder();
+            data = encoder.encode(data);
+        }
+        return btoa(String.fromCharCode(...new Uint8Array(data)));
+    }
+
+    base64Decode(base64) {
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes;
+    }
+
+    rotateLeft(value, amount) {
+        return ((value << amount) | (value >>> (32 - amount))) >>> 0;
+    }
+
+    quarterRound(x, a, b, c, d) {
+        x[a] = (x[a] + x[b]) >>> 0;
+        x[d] = this.rotateLeft(x[d] ^ x[a], 16);
+        x[c] = (x[c] + x[d]) >>> 0;
+        x[b] = this.rotateLeft(x[b] ^ x[c], 12);
+        x[a] = (x[a] + x[b]) >>> 0;
+        x[d] = this.rotateLeft(x[d] ^ x[a], 8);
+        x[c] = (x[c] + x[d]) >>> 0;
+        x[b] = this.rotateLeft(x[b] ^ x[c], 7);
+    }
+
+    chacha20Block(key, nonce, counter) {
+        const state = new Uint32Array(16);
+        for (let i = 0; i < 4; i++) {
+            state[i] = this.CHACHA20_CONSTANTS[i];
+        }
+        for (let i = 0; i < 8; i++) {
+            state[4 + i] = (
+                key[i * 4] |
+                (key[i * 4 + 1] << 8) |
+                (key[i * 4 + 2] << 16) |
+                (key[i * 4 + 3] << 24)
+            ) >>> 0;
+        }
+        state[12] = counter;
+        state[13] = (nonce[0] | (nonce[1] << 8) | (nonce[2] << 16) | (nonce[3] << 24)) >>> 0;
+        state[14] = (nonce[4] | (nonce[5] << 8) | (nonce[6] << 16) | (nonce[7] << 24)) >>> 0;
+        state[15] = (nonce[8] | (nonce[9] << 8) | (nonce[10] << 16) | (nonce[11] << 24)) >>> 0;
+
+        const workingState = new Uint32Array(state);
+        for (let round = 0; round < 10; round++) {
+            this.quarterRound(workingState, 0, 4, 8, 12);
+            this.quarterRound(workingState, 1, 5, 9, 13);
+            this.quarterRound(workingState, 2, 6, 10, 14);
+            this.quarterRound(workingState, 3, 7, 11, 15);
+            this.quarterRound(workingState, 0, 5, 10, 15);
+            this.quarterRound(workingState, 1, 6, 11, 12);
+            this.quarterRound(workingState, 2, 7, 8, 13);
+            this.quarterRound(workingState, 3, 4, 9, 14);
+        }
+
+        const output = new Uint8Array(64);
+        for (let i = 0; i < 16; i++) {
+            const result = state[i] + workingState[i];
+            output[i * 4] = result & 0xFF;
+            output[i * 4 + 1] = (result >>> 8) & 0xFF;
+            output[i * 4 + 2] = (result >>> 16) & 0xFF;
+            output[i * 4 + 3] = (result >>> 24) & 0xFF;
+        }
+        return output;
+    }
+
+    chacha20Crypt(input, key, nonce) {
+        const output = new Uint8Array(input.length);
+        let counter = 0;
+        let processed = 0;
+        while (processed < input.length) {
+            const keystream = this.chacha20Block(key, nonce, counter);
+            const chunkSize = Math.min(input.length - processed, 64);
+            for (let i = 0; i < chunkSize; i++) {
+                output[processed + i] = input[processed + i] ^ keystream[i];
+            }
+            processed += chunkSize;
+            counter++;
+        }
+        return output;
+    }
+
+    chacha20Encrypt(plaintext, key) {
+        const encoder = new TextEncoder();
+        const plaintextBytes = encoder.encode(plaintext);
+        const nonce = crypto.getRandomValues(new Uint8Array(this.CHACHA20_NONCE_LENGTH));
+        const ciphertext = this.chacha20Crypt(plaintextBytes, key, nonce);
+        return `${this.base64Encode(nonce)}.${this.base64Encode(ciphertext)}`;
+    }
+
+    chacha20Decrypt(encryptedData, key) {
+        const parts = encryptedData.split('.');
+        if (parts.length !== 2) return null;
+        try {
+            const nonce = this.base64Decode(parts[0]);
+            const ciphertext = this.base64Decode(parts[1]);
+            if (nonce.length !== this.CHACHA20_NONCE_LENGTH) return null;
+            const plaintextBytes = this.chacha20Crypt(ciphertext, key, nonce);
+            const decoder = new TextDecoder();
+            return decoder.decode(plaintextBytes);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async verify() {
+        const result = { success: false, message: '', data: null };
+        try {
+            const timestamp = Math.floor(Date.now() / 1000).toString();
+            if (!this.verifyTimestamp(timestamp)) {
+                result.message = '客户端时间验证失败';
+                return result;
+            }
+            const sign = await this.generateSignature(timestamp, this.code, this.uuid, this.id, this.appid);
+            const requestData = {
+                code: this.code,
+                uuid: this.uuid,
+                timestamp: timestamp,
+                sign: sign,
+                sign_type: 'sha256'
+            };
+            const requestJson = JSON.stringify(requestData);
+            const key = this.generateChaCha20Key(this.appid);
+            const encryptedData = this.chacha20Encrypt(requestJson, key);
+            const formData = new URLSearchParams();
+            formData.append('id', this.id);
+            formData.append('appid', this.appid);
+            formData.append('data', encryptedData);
+
+            let response;
+            try {
+                response = await fetch('https://card.ais666.cn/verifyKey/v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+            } catch (httpsError) {
+                response = await fetch('http://card.ais666.cn/verifyKey/v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+            }
+
+            if (!response.ok) throw new Error(`HTTP错误: ${response.status}`);
+
+            const responseData = await response.json();
+            let finalResponse = responseData;
+            if (responseData.data) {
+                const decryptedResponse = this.chacha20Decrypt(responseData.data, key);
+                if (decryptedResponse) {
+                    finalResponse = JSON.parse(decryptedResponse);
+                } else {
+                    result.message = '响应解密失败';
+                    return result;
+                }
+            }
+            if (finalResponse.success === true && !await this.verifyResponseIntegrity(finalResponse, this.code)) {
+                result.message = '响应验证失败';
+                return result;
+            }
+            result.success = finalResponse.success === true;
+            result.message = finalResponse.message || '';
+            result.data = finalResponse;
+        } catch (error) {
+            result.message = `请求失败: ${error.message}`;
+        }
+        return result;
+    }
+}
+
+// ============================================================
+// 3. 通用工具
 // ============================================================
 const CORS_PROXIES = [
   (u) => u,
@@ -229,7 +493,7 @@ function fetchWithTimeout(url, options, timeout) {
 }
 
 // ============================================================
-// 3. Python 源码解析器
+// 4. Python 源码解析器
 // ============================================================
 function findMatchingChar(s, startIdx, open, close) {
   let depth = 0, i = startIdx, inString = false, quoteChar = null;
@@ -445,7 +709,7 @@ function parsePythonApis(code) {
 }
 
 // ============================================================
-// 4. 归一化 + 去重
+// 5. 归一化 + 去重
 // ============================================================
 function normalizeApis(input) {
   const out = [];
@@ -485,7 +749,7 @@ function dedupeApis(apis) {
 }
 
 // ============================================================
-// 5. 从远程加载接口
+// 6. 从远程加载接口
 // ============================================================
 var apis = [];
 async function loadApisFromRemote() {
@@ -513,73 +777,6 @@ async function loadApisFromRemote() {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => /^https?:\/\//i.test(l));
   if (lines.length > 0) return dedupeApis(normalizeApis(lines));
   return [];
-}
-
-// ============================================================
-// 6. 卡密验证（采用你第一个文件的 POST 方式）
-// ============================================================
-// 生成机器码（基于 localStorage）
-function getOrCreateMac() {
-  const storageKey = 'device_mac';
-  let mac = localStorage.getItem(storageKey);
-  if (!mac) {
-    mac = generateMac();
-    localStorage.setItem(storageKey, mac);
-  }
-  return mac;
-}
-function generateMac() {
-  if (crypto.randomUUID) {
-    return crypto.randomUUID().replace(/-/g, '');
-  }
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// 带线路切换的验证（POST 提交，参照 4_5913481822636875511 文件）
-async function verifyCard(card) {
-  const mac = getOrCreateMac();
-  const postData = new URLSearchParams({
-    Softid: CONFIG.softid,
-    Card: card,
-    Version: CONFIG.version,
-    Mac: mac
-  }).toString();
-
-  let lastError = '';
-
-  for (let i = 0; i < CONFIG.apiUrls.length; i++) {
-    const url = CONFIG.apiUrls[i];
-    try {
-      console.log(`尝试线路 ${i + 1}: ${url}`);
-      const response = await fetchWithTimeout(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: postData
-      }, 12000);
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const resultText = await response.text();
-      console.log(`线路 ${i + 1} 返回:`, resultText);
-
-      // 成功：返回 16 位字符串（Token）
-      if (resultText && resultText.trim().length === 16) {
-        return { success: true, message: '验证成功', token: resultText.trim() };
-      } else {
-        lastError = `接口返回: ${resultText}`;
-        console.warn(`线路 ${i + 1} 验证失败:`, resultText);
-      }
-    } catch (error) {
-      lastError = `网络错误: ${error.message}`;
-      console.warn(`线路 ${i + 1} 请求失败:`, error);
-    }
-  }
-
-  return { success: false, message: `所有线路均不可用，最后错误: ${lastError}` };
 }
 
 // ============================================================
@@ -616,6 +813,8 @@ const buyBtn = document.getElementById('buyBtn');
 const freeOkBtn = document.getElementById('freeOkBtn');
 const messageDiv = document.getElementById('modalStatus');
 
+const SAVED_CARD_KEY = 'saved_card';
+
 function appendLog(msg, phone) {
   const log = document.getElementById('logArea');
   if (!log) return;
@@ -638,30 +837,44 @@ function showMainApp() {
   mainApp.style.display = 'block';
   appendLog('🔥 已加载接口 ' + apis.length + ' 个', '');
 }
+
 let verifying = false;
-async function handleVerify() {
+async function handleVerify(isAuto) {
   if (verifying) return;
   const card = codeInput.value.trim();
-  if (!card) { showMessage('请输入卡密', ''); return; }
+  if (!card) {
+    if (isAuto) return; // 自动验证时没有卡密就静默返回
+    showMessage('请输入卡密', '');
+    return;
+  }
+
   verifying = true;
   verifyBtn.disabled = true;
-  verifyBtn.textContent = '验证中...';
-  showMessage('正在验证，请稍候...', '');
+  verifyBtn.textContent = isAuto ? '自动验证中...' : '验证中...';
+  showMessage(isAuto ? '🔐 正在自动验证本地卡密...' : '正在验证，请稍候...', '');
+
   try {
-    const r = await verifyCard(card);
-    if (r.success) {
-      showMessage('验证成功！\nToken: ' + r.token, 'ok');
+    const verifier = new Verify(CONFIG.cardId, CONFIG.cardAppid, card);
+    const result = await verifier.verify();
+
+    if (result.success) {
+      let msg = result.message || '验证成功';
+      if (result.data && result.data.expiry) {
+        msg += '\n过期时间: ' + result.data.expiry;
+      }
+      showMessage(msg, 'ok');
       verifyBtn.textContent = '验证通过';
-      localStorage.setItem('saved_card', card);
-      setTimeout(showMainApp, 600);
+      // 保存卡密到本地
+      localStorage.setItem(SAVED_CARD_KEY, card);
+      setTimeout(showMainApp, 800);
     } else {
-      showMessage(r.message, '');
+      showMessage(result.message || '验证失败', '');
       verifyBtn.textContent = '重新验证';
       verifyBtn.disabled = false;
-      codeInput.focus();
+      if (!isAuto) codeInput.focus();
     }
-  } catch (e) {
-    showMessage('请求出错: ' + e.message, '');
+  } catch (err) {
+    showMessage('请求出错: ' + err.message, '');
     verifyBtn.textContent = '重新验证';
     verifyBtn.disabled = false;
   } finally {
@@ -684,22 +897,35 @@ window.addEventListener('DOMContentLoaded', async () => {
       appendLog('[系统] 使用内置备用接口，共 ' + apis.length + ' 个', '');
     }
   });
-  const saved = localStorage.getItem('saved_card');
-  if (saved) codeInput.value = saved;
+
+  // 检测公益模式
   const hasMark = await checkQQShareContent();
   if (hasMark) {
     verifyModal.style.display = 'none';
     freeModal.style.display = 'flex';
+    return;
+  }
+
+  // 读取本地保存的卡密
+  const saved = localStorage.getItem(SAVED_CARD_KEY);
+  if (saved && saved.length > 0) {
+    // 自动填充并验证
+    codeInput.value = saved;
+    showMessage('🔐 检测到已保存的卡密\n正在自动验证...', '');
+    setTimeout(() => {
+      handleVerify(true);
+    }, 300);
   } else {
     verifyModal.style.display = 'flex';
     codeInput.focus();
-    if (saved) handleVerify();
   }
 });
-verifyBtn.addEventListener('click', handleVerify);
+
+verifyBtn.addEventListener('click', () => handleVerify(false));
 buyBtn.addEventListener('click', () => window.open(CONFIG.buyUrl, '_blank'));
 freeOkBtn.addEventListener('click', showMainApp);
-codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleVerify(); });
+codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleVerify(false); });
+
 document.getElementById('eyeBtn').addEventListener('click', function () {
   const p = document.getElementById('phoneInput');
   const isPwd = p.type === 'password';
