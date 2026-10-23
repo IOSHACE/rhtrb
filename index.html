@@ -1,380 +1,625 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>可以成为我的恋人吗？</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-        }
-        body {
-            background: #f8d7e3;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            user-select: none;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>可以成为我的恋人吗？</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+    }
 
-        /* 主页面容器 */
-        .page {
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            padding: 20px;
-        }
-        .title {
-            font-size: 38px;
-            color: #7a455a;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
+    body {
+        background: #f7d6e4;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        user-select: none;
+    }
 
-        /* 卡通形象 */
-        .cartoon-box {
-            width: 220px;
-            height: 220px;
-            margin: 0 auto 50px;
-            position: relative;
-        }
-        .cat {
-            width: 180px;
-            height: 180px;
-            background: #fff;
-            border: 3px solid #222;
-            border-radius: 48% 48% 45% 45%;
-            position: relative;
-            margin: 0 auto;
-        }
-        /* 耳朵 */
-        .cat::before, .cat::after {
-            content: '';
-            position: absolute;
-            top: -22px;
-            width: 55px;
-            height: 65px;
-            background: #fff;
-            border: 3px solid #222;
-            border-radius: 50% 50% 30% 30%;
-            border-bottom: none;
-        }
-        .cat::before { left: 18px; }
-        .cat::after { right: 18px; }
+    .app {
+        width: 100%;
+        max-width: 480px;
+        height: 100vh;
+        max-height: 900px;
+        position: relative;
+        background: linear-gradient(180deg, #fad6e6 0%, #f7c9dd 100%);
+        overflow: hidden;
+    }
 
-        /* 灰色斑块 */
-        .patch {
-            position: absolute;
-            top: 12px;
-            left: 18px;
-            width: 75px;
-            height: 55px;
-            background: #d3d3d3;
-            border-radius: 50%;
-            z-index: 2;
-        }
+    .page {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 24px;
+    }
 
-        /* 眼睛 */
-        .eyes {
-            position: absolute;
-            top: 75px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 45px;
-        }
-        .eye {
-            width: 22px;
-            height: 9px;
-            background: #222;
-            border-radius: 10px;
-        }
+    .hide {
+        display: none !important;
+    }
 
-        /* 腮红 */
-        .cheek {
-            position: absolute;
-            top: 95px;
-            width: 32px;
-            height: 22px;
-            background: #ffb6c1;
-            border-radius: 50%;
-            opacity: 0.8;
-        }
-        .cheek.l { left: 22px; }
-        .cheek.r { right: 22px; }
+    .title {
+        font-size: 44px;
+        color: #7a3c56;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1.2;
+        margin-bottom: 40px;
+        letter-spacing: 1px;
+    }
 
-        /* 嘴巴 */
-        .mouth {
-            position: absolute;
-            top: 115px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 28px;
-            height: 14px;
-            border-bottom: 3px solid #222;
-            border-radius: 0 0 50% 50%;
-        }
+    .success-title {
+        font-size: 46px;
+        color: #7a3c56;
+        font-weight: 800;
+        text-align: center;
+        line-height: 1.2;
+        margin-bottom: 50px;
+    }
 
-        /* 手和爱心 */
-        .hands {
-            position: absolute;
-            bottom: 15px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 18px;
-        }
-        .hand {
-            width: 32px;
-            height: 42px;
-            background: #fff;
-            border: 3px solid #222;
-            border-radius: 50%;
-        }
-        .heart-big {
-            position: absolute;
-            top: 92px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 42px;
-            color: #f5a7b9;
-        }
-        .heart-small {
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 32px;
-            color: #f5a7b9;
-        }
+    /* 兔子角色 */
+    .scene {
+        position: relative;
+        width: 240px;
+        height: 340px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
 
-        /* 疑惑表情 */
-        .confused .eye {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-        }
-        .confused .mouth {
-            width: 10px;
-            height: 10px;
-            border: 3px solid #222;
-            border-radius: 50%;
-        }
-        .question-mark {
-            position: absolute;
-            top: -5px;
-            right: 5px;
-            font-size: 42px;
-            font-weight: bold;
-            color: #222;
-            display: none;
-        }
-        .confused .question-mark { display: block; }
+    .rabbit-box {
+        position: relative;
+        width: 220px;
+        height: 260px;
+    }
 
-        /* 生气表情 */
-        .angry .eye {
-            width: 22px;
-            height: 9px;
-        }
-        .angry .eye.l { transform: rotate(-12deg); }
-        .angry .eye.r { transform: rotate(12deg); }
-        .angry .mouth {
-            width: 22px;
-            height: 10px;
-            border-top: 3px solid #222;
-            border-bottom: none;
-            border-radius: 50% 50% 0 0;
-        }
-        .angry-mark {
-            position: absolute;
-            top: 25px;
-            right: 18px;
-            font-size: 32px;
-            color: #c85a5a;
-            display: none;
-        }
-        .angry .angry-mark { display: block; }
+    .top-heart {
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 34px;
+        color: #f59cbb;
+        z-index: 5;
+    }
 
-        /* 委屈表情 */
-        .sad .eye {
-            width: 26px;
-            height: 32px;
-            border-radius: 50%;
-            background: #fff;
-            border: 3px solid #222;
-            position: relative;
-        }
-        .sad .eye::after {
-            content: '';
-            position: absolute;
-            bottom: 6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 16px;
-            height: 16px;
-            background: #222;
-            border-radius: 50%;
-        }
-        .tear {
-            position: absolute;
-            top: 105px;
-            left: 32px;
-            width: 14px;
-            height: 22px;
-            background: #9ad0f0;
-            border-radius: 0 0 50% 50%;
-            display: none;
-        }
-        .sad .tear { display: block; }
+    .question {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 48px;
+        font-weight: 900;
+        color: #222;
+        display: none;
+        z-index: 6;
+    }
 
-        /* 按钮区域 */
-        .btn-wrap {
-            position: relative;
-            height: 80px;
-            width: 100%;
-        }
-        .btn {
-            padding: 16px 42px;
-            font-size: 30px;
-            font-weight: bold;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            cursor: pointer;
-            position: absolute;
-            transition: background 0.2s;
-        }
-        .btn-yes {
-            background: #df7892;
-            left: calc(50% - 115px);
-        }
-        .btn-yes:hover { background: #d06682; }
-        .btn-no {
-            background: #6a8ac2;
-            right: calc(50% - 115px);
-        }
+    .angry-mark {
+        position: absolute;
+        top: 14px;
+        right: 6px;
+        font-size: 34px;
+        display: none;
+        z-index: 6;
+    }
 
-        /* 成功页面 */
-        .success-page {
-            display: none;
-        }
-        .success-title {
-            font-size: 42px;
-            color: #7a455a;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
-        .couple {
-            display: flex;
-            justify-content: center;
-            gap: -30px;
-        }
-        .couple .cat {
-            width: 130px;
-            height: 130px;
-        }
-        .couple .cat:nth-child(2) .patch {
-            left: auto;
-            right: 18px;
-            background: #c2b09e;
-        }
-    </style>
+    .rabbit-head {
+        position: absolute;
+        top: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 180px;
+        height: 170px;
+        background: #ffffff;
+        border: 4px solid #222;
+        border-radius: 48% 48% 46% 46%;
+        z-index: 3;
+    }
+
+    .ear {
+        position: absolute;
+        top: -54px;
+        width: 54px;
+        height: 86px;
+        background: #fff;
+        border: 4px solid #222;
+        border-radius: 50% 50% 40% 40%;
+    }
+    .ear.left { left: 24px; }
+    .ear.right { right: 24px; }
+
+    .patch {
+        position: absolute;
+        top: 14px;
+        left: 18px;
+        width: 74px;
+        height: 54px;
+        background: #d4d4d4;
+        border-radius: 50%;
+        z-index: 2;
+    }
+
+    .eye {
+        position: absolute;
+        top: 72px;
+        width: 22px;
+        height: 10px;
+        background: #222;
+        border-radius: 12px;
+    }
+    .eye.left { left: 44px; }
+    .eye.right { right: 44px; }
+
+    .cheek {
+        position: absolute;
+        top: 94px;
+        width: 34px;
+        height: 24px;
+        background: #ffb6c1;
+        border-radius: 50%;
+        opacity: 0.75;
+    }
+    .cheek.left { left: 18px; }
+    .cheek.right { right: 18px; }
+
+    .mouth {
+        position: absolute;
+        top: 114px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 24px;
+        height: 12px;
+        border-bottom: 3px solid #222;
+        border-radius: 0 0 50% 50%;
+    }
+
+    .hands {
+        position: absolute;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 14px;
+        z-index: 4;
+    }
+    .hand {
+        width: 34px;
+        height: 44px;
+        background: #fff;
+        border: 4px solid #222;
+        border-radius: 50%;
+    }
+
+    .heart-center {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 44px;
+        color: #f59cbb;
+        z-index: 5;
+    }
+
+    .body {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 110px;
+        height: 70px;
+        background: #fff;
+        border: 4px solid #222;
+        border-radius: 40px;
+        z-index: 1;
+    }
+    .tail {
+        position: absolute;
+        bottom: 18px;
+        right: -10px;
+        width: 44px;
+        height: 44px;
+        background: #fff;
+        border: 4px solid #222;
+        border-radius: 50%;
+    }
+
+    /* 表情状态 */
+    .is-confused .eye {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+    }
+    .is-confused .mouth {
+        width: 10px;
+        height: 10px;
+        border: 3px solid #222;
+        border-radius: 50%;
+    }
+    .is-confused .question {
+        display: block;
+    }
+
+    .is-angry .eye {
+        width: 24px;
+        height: 10px;
+    }
+    .is-angry .eye.left {
+        transform: rotate(-14deg);
+        margin-left: -4px;
+    }
+    .is-angry .eye.right {
+        transform: rotate(14deg);
+        margin-right: -4px;
+    }
+    .is-angry .mouth {
+        width: 22px;
+        height: 10px;
+        border-top: 3px solid #222;
+        border-bottom: none;
+        border-radius: 50% 50% 0 0;
+    }
+    .is-angry .angry-mark {
+        display: block;
+    }
+    .is-angry .heart-center {
+        display: none;
+    }
+
+    .is-sad .eye {
+        width: 26px;
+        height: 32px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid #222;
+    }
+    .is-sad .eye::after {
+        content: "";
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 16px;
+        height: 16px;
+        background: #222;
+        border-radius: 50%;
+    }
+    .is-sad .mouth {
+        width: 18px;
+        height: 8px;
+        border-top: 3px solid #222;
+        border-bottom: none;
+        border-radius: 50% 50% 0 0;
+        top: 118px;
+    }
+    .is-sad .heart-center {
+        display: none;
+    }
+
+    .tear {
+        position: absolute;
+        top: 106px;
+        left: 34px;
+        width: 14px;
+        height: 22px;
+        background: #9acdf0;
+        border-radius: 0 0 50% 50%;
+        display: none;
+        z-index: 5;
+    }
+    .is-sad .tear {
+        display: block;
+    }
+
+    /* 按钮区域 */
+    .btn-area {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+    }
+
+    .btn {
+        padding: 18px 46px;
+        font-size: 34px;
+        font-weight: 800;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-yes {
+        background: #de7493;
+        z-index: 9;
+    }
+    .btn-yes:hover {
+        background: #d26282;
+    }
+
+    .btn-no {
+        background: #6989c3;
+        z-index: 10;
+    }
+
+    /* 成功页 */
+    .couple {
+        position: relative;
+        width: 340px;
+        height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .couple .rabbit-box {
+        width: 160px;
+        height: 200px;
+    }
+
+    .couple .rabbit-head {
+        width: 130px;
+        height: 122px;
+        top: 30px;
+    }
+
+    .couple .ear {
+        width: 40px;
+        height: 64px;
+        top: -40px;
+    }
+    .couple .ear.left { left: 16px; }
+    .couple .ear.right { right: 16px; }
+
+    .couple .patch {
+        width: 54px;
+        height: 40px;
+        top: 10px;
+        left: 12px;
+    }
+
+    .couple .eye {
+        width: 18px;
+        height: 8px;
+        top: 54px;
+    }
+    .couple .eye.left { left: 32px; }
+    .couple .eye.right { right: 32px; }
+
+    .couple .mouth {
+        top: 76px;
+        width: 20px;
+        height: 10px;
+    }
+
+    .couple .body {
+        width: 86px;
+        height: 54px;
+    }
+
+    .couple .tail {
+        width: 34px;
+        height: 34px;
+        bottom: 14px;
+    }
+
+    .rabbit-left {
+        transform: translateX(14px);
+    }
+    .rabbit-right {
+        transform: translateX(-14px);
+    }
+
+    .rabbit-right .patch {
+        left: auto;
+        right: 12px;
+        background: #c1b09e;
+    }
+
+    .couple-hug {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 80px;
+        z-index: 10;
+    }
+
+    .hug-heart {
+        position: absolute;
+        top: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 38px;
+        color: #f59cbb;
+        z-index: 11;
+    }
+
+    .hug-arm {
+        position: absolute;
+        top: 50%;
+        width: 40px;
+        height: 14px;
+        background: #fff;
+        border: 4px solid #222;
+        border-radius: 20px;
+    }
+    .hug-arm.left {
+        left: -18px;
+        transform: rotate(20deg);
+    }
+    .hug-arm.right {
+        right: -18px;
+        transform: rotate(-20deg);
+    }
+</style>
 </head>
 <body>
+
+<div class="app">
+
     <!-- 主页面 -->
-    <div class="page" id="main">
+    <div class="page" id="mainPage">
         <h1 class="title">可以成为我的恋人吗？</h1>
-        <div class="cartoon-box" id="cartoon">
-            <div class="cat">
-                <div class="patch"></div>
-                <div class="eyes">
-                    <div class="eye l"></div>
-                    <div class="eye r"></div>
+
+        <div class="scene">
+            <div class="rabbit-box" id="rabbitBox">
+                <div class="top-heart">♡</div>
+                <div class="question">?</div>
+                <div class="angry-mark">💢</div>
+
+                <div class="rabbit-head">
+                    <div class="ear left"></div>
+                    <div class="ear right"></div>
+                    <div class="patch"></div>
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="cheek left"></div>
+                    <div class="cheek right"></div>
+                    <div class="mouth"></div>
+                    <div class="tear"></div>
                 </div>
-                <div class="cheek l"></div>
-                <div class="cheek r"></div>
-                <div class="mouth"></div>
+
+                <div class="body">
+                    <div class="tail"></div>
+                </div>
+
                 <div class="hands">
                     <div class="hand"></div>
                     <div class="hand"></div>
                 </div>
-                <div class="heart-big">♡</div>
-                <div class="heart-small">♡</div>
-                <div class="question-mark">?</div>
-                <div class="angry-mark">💢</div>
-                <div class="tear"></div>
+
+                <div class="heart-center">♥</div>
             </div>
         </div>
-        <div class="btn-wrap">
+
+        <div class="btn-area">
             <button class="btn btn-yes" id="yesBtn">可以</button>
             <button class="btn btn-no" id="noBtn">不要</button>
         </div>
     </div>
 
     <!-- 成功页面 -->
-    <div class="page success-page" id="success">
+    <div class="page success-page hide" id="successPage">
         <h1 class="success-title">喜欢你!! ( >ᗜ< )♡</h1>
+
         <div class="couple">
-            <div class="cat">
-                <div class="patch"></div>
-                <div class="eyes">
-                    <div class="eye l"></div>
-                    <div class="eye r"></div>
+            <div class="rabbit-box rabbit-left">
+                <div class="rabbit-head">
+                    <div class="ear left"></div>
+                    <div class="ear right"></div>
+                    <div class="patch"></div>
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="mouth"></div>
                 </div>
-                <div class="mouth"></div>
+                <div class="body">
+                    <div class="tail"></div>
+                </div>
             </div>
-            <div class="cat">
-                <div class="patch"></div>
-                <div class="eyes">
-                    <div class="eye l"></div>
-                    <div class="eye r"></div>
+
+            <div class="rabbit-box rabbit-right">
+                <div class="rabbit-head">
+                    <div class="ear left"></div>
+                    <div class="ear right"></div>
+                    <div class="patch"></div>
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="mouth"></div>
                 </div>
-                <div class="mouth"></div>
+                <div class="body">
+                    <div class="tail"></div>
+                </div>
+            </div>
+
+            <div class="couple-hug">
+                <div class="hug-heart">♡</div>
+                <div class="hug-arm left"></div>
+                <div class="hug-arm right"></div>
             </div>
         </div>
     </div>
 
-    <script>
-        const noBtn = document.getElementById('noBtn');
-        const yesBtn = document.getElementById('yesBtn');
-        const cartoon = document.getElementById('cartoon');
-        const mainPage = document.getElementById('main');
-        const successPage = document.getElementById('success');
+</div>
 
-        // 拒绝的阶段文案和对应表情
-        const stepText = ['不要', '？你认真的吗...', '要不再想想', '不许选这个', '真的不可以吗'];
-        const stepExpr = ['', 'confused', '', 'angry', 'sad'];
-        let count = 0;
+<script>
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const rabbitBox = document.getElementById('rabbitBox');
+    const mainPage = document.getElementById('mainPage');
+    const successPage = document.getElementById('successPage');
 
-        // 鼠标靠近/点击拒绝按钮都会逃跑
-        noBtn.addEventListener('mouseenter', runAway);
-        noBtn.addEventListener('click', runAway);
+    const steps = [
+        { text: '不要',     state: '' },
+        { text: '？你认真的吗...', state: 'is-confused' },
+        { text: '要不再想想', state: '' },
+        { text: '不许选这个', state: 'is-angry' },
+        { text: '真的不可以吗', state: 'is-sad' }
+    ];
 
-        function runAway() {
-            count = Math.min(count + 1, stepText.length - 1);
-            
-            // 更新按钮文字和卡通表情
-            noBtn.textContent = stepText[count];
-            cartoon.className = 'cartoon-box ' + stepExpr[count];
+    let stepIndex = 0;
+    // 按钮放大参数 - 直接拉满
+    let yesPaddingX = 46;
+    let yesPaddingY = 18;
+    let yesFontSize = 34;
 
-            // 随机位置（不超出屏幕）
-            const maxX = window.innerWidth - noBtn.offsetWidth - 30;
-            const maxY = window.innerHeight - noBtn.offsetHeight - 100;
-            
-            noBtn.style.position = 'fixed';
-            noBtn.style.left = Math.random() * maxX + 'px';
-            noBtn.style.top = Math.random() * maxY + 'px';
+    function updateRabbitState() {
+        rabbitBox.classList.remove('is-confused', 'is-angry', 'is-sad');
+        if (steps[stepIndex].state) {
+            rabbitBox.classList.add(steps[stepIndex].state);
         }
+    }
 
-        // 点击同意
-        yesBtn.addEventListener('click', () => {
-            mainPage.style.display = 'none';
-            successPage.style.display = 'block';
-        });
-    </script>
+    function runAway(e) {
+        if (e) e.preventDefault();
+
+        stepIndex = Math.min(stepIndex + 1, steps.length - 1);
+        noBtn.textContent = steps[stepIndex].text;
+
+        updateRabbitState();
+
+        // 「可以」按钮暴力撑大 - 每次猛涨
+        yesPaddingX += 35;
+        yesPaddingY += 18;
+        yesFontSize += 14;
+        
+        yesBtn.style.padding = `${yesPaddingY}px ${yesPaddingX}px`;
+        yesBtn.style.fontSize = `${yesFontSize}px`;
+
+        // 「不要」按钮直接随机满屏跑
+        const maxX = window.innerWidth - noBtn.offsetWidth - 20;
+        const maxY = window.innerHeight - noBtn.offsetHeight - 60;
+
+        noBtn.style.position = 'fixed';
+        noBtn.style.left = Math.random() * maxX + 10 + 'px';
+        noBtn.style.top = Math.random() * maxY + 40 + 'px';
+    }
+
+    noBtn.addEventListener('mouseenter', runAway);
+    noBtn.addEventListener('touchstart', runAway, { passive: false });
+    noBtn.addEventListener('click', runAway);
+
+    yesBtn.addEventListener('click', () => {
+        mainPage.classList.add('hide');
+        successPage.classList.remove('hide');
+    });
+</script>
+
 </body>
 </html>
